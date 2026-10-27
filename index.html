@@ -848,7 +848,7 @@ function renderUnit() {
     <div class="card formgrid"><div class="toolbar">
       <div class="field"><label for="rlName">תפקיד</label><input type="text" id="rlName" data-bind="addR.name" value="${esc(ui.addR.name)}" placeholder="למשל: קשר פלוגתי"></div>
       <div class="field"><label for="rlPerson">שם</label><input type="text" id="rlPerson" data-bind="addR.person" value="${esc(ui.addR.person)}"></div>
-    </div><div class="actions"><button class="btn" data-act="addRole">הוספת בעל תפקיד</button></div></div></section>`;
+    </div><div class="actions"><button class="btn" data-act="addRole">הוספת בעל תפקיד</button></div></div></section>${isOwner() && lv === 'brigade' ? wipeView() : ''}`;
 }
 
 /* ---------- incidents ---------- */
@@ -1133,6 +1133,20 @@ function renderGate() {
     <div class="card formgrid"><div>נכנסת בתור <b dir="ltr">${esc(ME.email)}</b>.</div><div class="small muted">בקש ממנהל ההרשאות ביחידה שלך להוסיף את המייל הזה בעמוד ההרשאות. אחרי שהוא מוסיף, רענן את הדף.</div>
     <div class="actions"><button class="btn primary" data-act="reload">רענון</button><button class="btn" data-act="logout">כניסה עם חשבון אחר</button></div></div></section>`);
 }
+const DATA_COLS = ['tz', 'stock', 'moves', 'confirms', 'incidents', 'loans'];
+function wipeView() {
+  const total = DATA_COLS.reduce((t, c) => t + Object.keys(S[c] || {}).length, 0);
+  if (!total) return '';
+  const parts = [['tz', 'פריטי צ׳'], ['stock', 'רשומות מלאי'], ['moves', 'קבלות'], ['confirms', 'אישורים'], ['incidents', 'חריגים'], ['loans', 'השאלות']].map(([c, l]) => `${Object.keys(S[c] || {}).length} ${l}`).join(', ');
+  return `<section class="block"><h2>ניקוי נתונים<small>בעל המערכת בלבד</small></h2>
+    <div class="item sev-warn"><div class="title">מחיקת כל הציוד והתנועות</div><div class="small">יימחקו: ${parts}. מבנה החטיבה, סוגי הציוד, הקיטים והמשתמשים נשארים. אי אפשר לשחזר.</div>
+    <div class="actions">${ui.wipeArm ? '<button class="btn crit" data-act="wipeData">כן, למחוק הכל</button><button class="btn" data-act="wipeCancel">ביטול</button>' : '<button class="btn crit" data-act="wipeArm">מחיקת נתוני הדמו</button>'}</div></div></section>`;
+}
+async function wipeData() {
+  const refs = [];
+  DATA_COLS.forEach(c => Object.keys(S[c] || {}).forEach(id => refs.push(db.collection(c).doc(id))));
+  for (let i = 0; i < refs.length; i += 400) { const b = db.batch(); refs.slice(i, i + 400).forEach(r => b.delete(r)); await b.commit(); }
+}
 function importView() {
   const D = window.SEED_DATA;
   if (!D) return empty('קובץ seed.js חסר', 'מעלים את seed.js יחד עם שאר הקבצים.');
@@ -1161,6 +1175,9 @@ Object.assign(H, {
   },
   logout: async () => { try { await fauth.signOut(); } catch (e) {} location.reload(); },
   reload: () => location.reload(),
+  wipeArm: () => { ui.wipeArm = true; render(); },
+  wipeCancel: () => { ui.wipeArm = false; render(); },
+  wipeData: () => run(async () => { if (!isOwner()) fail('רק בעל המערכת יכול למחוק נתונים.'); ui.wipeArm = false; await wipeData(); }, 'נתוני הדמו נמחקו. המבנה והמשתמשים נשארו.'),
   importSeed: v => run(async () => { if (!isOwner()) fail('רק בעל המערכת יכול לבצע ייבוא.'); await importSeed(v === '1'); }, 'הייבוא הסתיים. עכשיו מוסיפים משתמשים בעמוד ההרשאות.'),
 });
 function subscribe() {
