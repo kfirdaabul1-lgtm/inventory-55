@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#132033">
+<title>מלאי חטיבתי</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=Suez+One&display=swap">
+<style>
+html,body{margin:0}[hidden]{display:none!important}img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* Layout: same shell as the Seven Collection app — sticky brand header with a menu button, side drawer for pages, one working column. */
+:root {
+  --bg: #EDF0F4; --surface: #FFFFFF; --sunk: #E2E7EE; --line: #D2D9E3; --fg: #132033; --muted: #566377;
+  --accent: #132033; --accent-ink: #FFFFFF; --accent-soft: #E2E7EE;
+  --brass: #8A5E0E; --brass-soft: #F2E4C4;
+  --good: #1D734A; --good-soft: #DCEFE4; --warn: #A04B17; --warn-soft: #FAE6D4; --crit: #AE2318; --crit-soft: #F9E0DC;
+  --scrim: rgb(12 18 28 / .45);
+  --font-display: "Suez One", "Frank Ruhl Libre", Georgia, serif;
+  --font-body: "IBM Plex Sans Hebrew", "Rubik", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E131A; --surface: #17202B; --sunk: #111822; --line: #293443; --fg: #E4EAF2; --muted: #97A3B4;
+  --accent: #E4EAF2; --accent-ink: #0E131A; --accent-soft: #1E2935; --brass: #E2B65E; --brass-soft: #3A2D14;
+  --good: #57C891; --good-soft: #163326; --warn: #F2A267; --warn-soft: #3A2414; --crit: #F2806F; --crit-soft: #3B1A17;
+  --scrim: rgb(0 0 0 / .6); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0E131A; --surface: #17202B; --sunk: #111822; --line: #293443; --fg: #E4EAF2; --muted: #97A3B4;
+  --accent: #E4EAF2; --accent-ink: #0E131A; --accent-soft: #1E2935; --brass: #E2B65E; --brass-soft: #3A2D14;
+  --good: #57C891; --good-soft: #163326; --warn: #F2A267; --warn-soft: #3A2414; --crit: #F2806F; --crit-soft: #3B1A17;
+  --scrim: rgb(0 0 0 / .6); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 960px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.num { font-variant-numeric: tabular-nums; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+.ptitle { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; line-height: 1.2; }
+.block > h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .row1 { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px 8px; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand h1 { font-size: 18px; font-weight: 700; }
+.brand .tag { font-size: 12px; color: var(--brass); background: var(--brass-soft); padding: 1px 8px; border-radius: 99px; font-weight: 600; }
+.acting { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 260px; justify-content: flex-end; }
+.acting label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.acting select { min-width: 0; flex: 1; max-width: 360px; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 8px; }
+.tabs::-webkit-scrollbar { display: none; }
+.top-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; }
+.brandx { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.markx { width: 36px; height: 36px; border-radius: 9px; background: var(--fg); color: var(--brass-soft); display: grid; place-items: center; flex: none; }
+.b1 { font-family: var(--font-display); font-size: 1.15rem; line-height: 1.1; }
+.b2 { font-size: .82rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.burger { width: 42px; height: 42px; border: 0; background: none; color: var(--fg); display: grid; place-items: center; border-radius: 10px; cursor: pointer; flex: none; position: relative; }
+.burger:hover { background: var(--sunk); }
+.burger .badge { position: absolute; top: 2px; inset-inline-end: 2px; }
+.drawer-bg { position: fixed; inset: 0; background: var(--scrim); z-index: 70; }
+.drawer { position: fixed; top: 0; bottom: 0; left: 0; width: min(300px, 86vw); background: var(--surface); z-index: 71; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(18px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); box-shadow: 0 0 40px rgb(0 0 0 / .18); }
+@media (prefers-reduced-motion: no-preference) { .drawer { animation: drawerIn .22s ease-out; } .drawer-bg { animation: fadeIn .2s; } }
+@keyframes drawerIn { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.drawer-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 4px 12px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.drawer-h b { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; }
+.drawer-who { font-size: .82rem; color: var(--muted); padding: 0 6px 10px; display: grid; gap: 6px; }
+.drawer-who select { width: 100%; }
+.navi { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border-radius: 10px; border: 0; background: none; font: inherit; font-size: 1rem; color: var(--fg); cursor: pointer; text-align: start; }
+.navi:hover { background: var(--sunk); }
+.navi[aria-current="page"] { background: var(--sunk); font-weight: 600; }
+.navi svg { color: var(--muted); flex: none; }
+.navi .badge { margin-inline-start: auto; }
+.xbtn { border: 0; background: var(--sunk); color: var(--fg); width: 32px; height: 32px; border-radius: 8px; font-size: 1.1rem; cursor: pointer; flex: none; }
+.tab { border: 0; background: transparent; padding: 7px 12px; border-radius: 8px; color: var(--muted); font-weight: 500; white-space: nowrap; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.tab:hover { background: var(--sunk); color: var(--fg); }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.badge { font-size: 11px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--crit); color: #fff; display: inline-grid; place-items: center; font-weight: 600; }
+.tab[aria-selected="true"] .badge { background: var(--accent-ink); color: var(--accent); }
+
+main { padding-block: 16px 64px; display: grid; gap: 20px; }
+.demo { font-size: 13px; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--r); padding: 8px 12px; }
+.scope { color: var(--muted); font-size: 13px; }
+.scope b { color: var(--fg); font-weight: 600; }
+section.block { display: grid; gap: 10px; min-width: 0; }
+.block > h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.block > h2 small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; min-width: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; }
+.stat .k { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+.stat .v { font-family: var(--font-mono); font-size: 1.45rem; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.stat .v small { font-size: 14px; font-weight: 500; color: var(--muted); }
+.stat.lead { border-color: var(--accent); }
+.meter { height: 6px; background: var(--sunk); border-radius: 99px; overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.meter.warn > i { background: var(--warn); }
+.meter.crit > i { background: var(--crit); }
+
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: right; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--sunk); }
+tr:last-child td { border-bottom: 0; }
+td.wrapcell { white-space: normal; min-width: 160px; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--sunk); }
+
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; white-space: nowrap; background: var(--sunk); color: var(--muted); }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.crit { background: var(--crit-soft); color: var(--crit); }
+.pill.brass { background: var(--brass-soft); color: var(--brass); }
+.pill.acc { background: var(--accent-soft); color: var(--accent); }
+.tzno { color: var(--brass); font-weight: 600; }
+
+.list { display: grid; gap: 8px; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.item .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.item .title { font-weight: 600; }
+.item .meta { font-size: 13px; color: var(--muted); }
+.item.sev-crit { border-inline-start: 4px solid var(--crit); }
+.item.sev-warn { border-inline-start: 4px solid var(--warn); }
+.item.sev-good { border-inline-start: 4px solid var(--good); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-weight: 500; }
+.btn:hover { background: var(--sunk); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.good { border-color: var(--good); color: var(--good); }
+.btn.good.on { background: var(--good); color: #fff; }
+.btn.crit { border-color: var(--crit); color: var(--crit); }
+.btn.crit.on { background: var(--crit); color: #fff; }
+.btn.warn { border-color: var(--warn); color: var(--warn); }
+.btn.warn.on { background: var(--warn); color: #fff; }
+.btn.sm { padding: 4px 10px; font-size: 13px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.linkbtn { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font-weight: 500; }
+
+select, input[type="text"], input[type="number"], input[type="date"], textarea { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; }
+textarea { width: 100%; resize: vertical; min-height: 64px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > label, .lbl { font-size: 12px; color: var(--muted); font-weight: 500; }
+.formgrid { display: grid; gap: 12px; }
+.seg { display: inline-flex; background: var(--sunk); border-radius: 9px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; padding: 5px 12px; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
+.line { display: grid; grid-template-columns: minmax(0, 1fr) 96px auto; gap: 8px; align-items: center; }
+.checks { display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.check { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: var(--surface); }
+.check:has(input:checked) { border-color: var(--brass); background: var(--brass-soft); }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+.toolbar .field { flex: 1 1 180px; }
+
+.empty { text-align: center; padding: 28px 16px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); }
+.empty b { color: var(--fg); display: block; margin-bottom: 4px; }
+
+details.sku { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+details.sku summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+details.sku summary::-webkit-details-marker { display: none; }
+details.sku summary::after { content: "›"; color: var(--muted); transform: rotate(90deg); transition: transform .15s; }
+details.sku[open] summary::after { transform: rotate(-90deg); }
+details.sku .rows { border-top: 1px solid var(--line); padding: 4px 14px 10px; display: grid; }
+details.sku .rows div { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 14px; border-bottom: 1px dotted var(--line); }
+details.sku .rows div:last-child { border-bottom: 0; }
+
+.sheet-bg { position: fixed; inset: 0; background: rgb(0 0 0 / .45); z-index: 20; display: grid; place-items: end center; }
+@media (min-width: 700px) { .sheet-bg { place-items: center; } }
+.sheet { background: var(--surface); width: min(640px, 100%); max-height: 88vh; overflow-y: auto; border-radius: 14px 14px 0 0; padding: 18px max(18px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); display: grid; gap: 14px; }
+@media (min-width: 700px) { .sheet { border-radius: 14px; } }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 14px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+.timeline { display: grid; gap: 0; border-inline-start: 2px solid var(--line); margin-inline-start: 6px; }
+.timeline div { padding: 4px 14px 8px; position: relative; font-size: 14px; }
+.timeline div::before { content: ""; position: absolute; inset-inline-start: -6px; top: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); inset-inline: 0; margin: 0 auto; width: max-content; max-width: calc(100% - 32px); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 30; font-size: 14px; }
+.skeleton { padding: 40px 0; text-align: center; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.navi.out { margin-top: auto; }
+.drawer-who .who { color: var(--fg); font-weight: 600; }
+.mrow { display: grid; gap: 8px; }
+</style>
+</head>
+<body>
+<div dir="rtl" lang="he">
+  <header class="top"><div class="wrap top-in" id="top">
+    <div class="brandx"><span class="markx"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span><div><div class="b1">מלאי חטיבתי</div><div class="b2">טוען…</div></div></div>
+  </div></header>
+  <div id="drawer"></div>
+  <main class="wrap" id="main">
+    <div class="skeleton">טוען את נתוני המלאי…</div>
+  </main>
+  <div id="sheet"></div>
+  <div id="toast" class="toast" hidden></div>
+</div>
+
+<!-- Firebase (compat build), same as the other apps -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<!-- Connection settings: fill in config.js -->
+<script src="config.js"></script>
+<!-- Starting data for the first import -->
+<script src="seed.js"></script>
+<script>
+(() => {
+const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 'kits', 'loans', 'members'];
+const S = {}; COLS.forEach(c => S[c] = {});
+const loaded = new Set();
+let db = null, busy = false;
+const ui = { tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {} };
+const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
+try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const isoD = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const weekStart = (d = new Date()) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - x.getDay()); return isoD(x); };
+const WEEK = weekStart();
+const weekEnd = () => { const d = new Date(WEEK + 'T00:00:00'); d.setDate(d.getDate() + 6); return d; };
+const phase = () => { const n = new Date(), d = n.getDay(), h = n.getHours(); if (d >= 4) return 'escalated'; if (d > 2 || (d === 2 && h >= 12)) return 'overdue'; return 'open'; };
+const fmtD = s => { if (!s) return '—'; const d = new Date(s); return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(2)}`; };
+const fmtDT = s => { if (!s) return '—'; const d = new Date(s); return `${fmtD(s)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const now = () => new Date().toISOString();
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+const LEVEL = { brigade: 'חטיבה', battalion: 'יחידה', company: 'פלוגה / חפ״ק', role: 'בעל תפקיד' };
+const MTYPE = { receive: 'קליטה', issue: 'ניפוק', return: 'זיכוי', transfer: 'העברה', loan: 'השאלה מיחידה', loanret: 'החזרת השאלה' };
+const MSTAT = { awaiting: ['ממתין לאישור דרג', 'warn'], pending: ['ממתין לחתימה', 'warn'], signed: ['נחתם', 'good'], rejected: ['נדחה', 'crit'], cancelled: ['בוטל', ''] };
+const TZSTAT = { ok: ['תקין', 'good'], repair: ['בתיקון', 'warn'], disabled: ['מושבת', ''], lost: ['אבד', 'crit'] };
+const ANS = { here: ['נמצא אצלי', 'good'], missing: ['לא נמצא', 'crit'], repair: ['בתיקון / הועבר', 'warn'] };
+const INC = { open: ['פתוח', 'crit'], investigating: ['בבירור', 'warn'], found: ['נמצא', 'good'], lost: ['דווח כאובדן', 'crit'] };
+const INCTYPE = { missing: 'פריט צ׳ סומן "לא נמצא"', unconfirmed: 'לא התקבל אישור שבועי', count: 'פער בספירה', kit: 'חוסר בתכולת קיט' };
+
+const nodesArr = () => Object.values(S.nodes);
+const kids = id => nodesArr().filter(n => n.parent === id).sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, 'he'));
+const desc = id => { const out = [id]; for (let i = 0; i < out.length; i++) kids(out[i]).forEach(k => out.push(k.id)); return out; };
+const rootNode = () => nodesArr().find(n => !n.parent);
+const nm = id => { const n = S.nodes[id]; if (!n) return '—'; return n.level === 'role' && n.person ? `${n.name} · ${n.person}` : n.name; };
+const where = id => { const n = S.nodes[id]; if (!n) return ''; const p = []; let x = S.nodes[n.parent]; while (x && x.level !== 'brigade') { p.unshift(x.name); x = S.nodes[x.parent]; } return p.join(' / '); };
+const fullName = id => { const w = where(id); return w ? `${nm(id)} — ${w}` : nm(id); };
+const depth = id => { let d = 0, n = S.nodes[id]; while (n && n.parent) { d++; n = S.nodes[n.parent]; } return d; };
+const skuName = s => S.skus[s]?.name || s;
+const me = () => ui.acting;
+const qtyOf = (h, s) => S.stock[h + '__' + s]?.qty || 0;
+const openMove = m => m.status === 'pending' || m.status === 'awaiting';
+const reserved = (h, s) => Object.values(S.moves).filter(m => m.from === h && openMove(m)).reduce((a, m) => a + (m.lines || []).filter(l => l.sku === s).reduce((b, l) => b + l.qty, 0), 0);
+const avail = (h, s) => qtyOf(h, s) - reserved(h, s);
+const holdings = h => Object.values(S.stock).filter(x => x.holder === h && x.qty > 0);
+const confirmOf = t => { const c = S.confirms[WEEK + '__' + t.id]; return c && c.holder === t.holder ? c : null; };
+const lastConfirm = tid => Object.values(S.confirms).filter(c => c.tz === tid).sort((a, b) => (b.at || '').localeCompare(a.at || ''))[0];
+const activeTz = t => t.status !== 'lost' && !t.returned;
+const liveTz = () => Object.values(S.tz).filter(t => !t.returned);
+const baseUnit = t => t.loanId ? rootNode().id : topUnit(t.holder);
+const ownerLabel = t => t.loanId ? (S.loans[t.loanId]?.from || 'יחידה חיצונית') : nm(topUnit(t.holder));
+const signedTo = t => t.holder === baseUnit(t) ? null : t.holder;
+const sideName = (id, ext) => id ? nm(id) : (ext || 'גורם חיצוני');
+function periodsCell(t) {
+  const ps = (t.periods || []).filter(p => p.from && p.to);
+  return `${ps.map(p => `<div class="small num">${esc(p.name || 'תקופה')} · ${fmtD(p.from + 'T00:00:00')}–${fmtD(p.to + 'T00:00:00')}</div>`).join('')}<div style="margin-top:3px">${pill(periodState(t))}</div>`;
+}
+function ownerCell(t) { return `${esc(ownerLabel(t))}${t.loanId ? ' <span class="pill brass">השאלה</span>' : ''}`; }
+function signedCell(t) { const h = signedTo(t); return h ? `${esc(nm(h))}<div class="small muted">${esc(where(h))}</div>` : '<span class="muted small">לא מוחתם · במחסן</span>'; }
+const topUnit = id => { let n = S.nodes[id]; while (n && n.parent && S.nodes[n.parent] && S.nodes[n.parent].parent) n = S.nodes[n.parent]; return n ? n.id : id; };
+const kitFor = sku => Object.values(S.kits).find(k => k.sku === sku);
+const safeId = k => String(k).replace(/[^A-Za-z0-9_-]/g, '_');
+function kitDraft(key, sku, base) {
+  const k = kitFor(sku); if (!k) return null;
+  if (!draft.kit[key]) draft.kit[key] = (k.items || []).map(c => { const b = base && base.find(x => x.id === c.id); return { id: c.id, name: c.name, qty: c.qty, inc: b ? !!b.have : true }; });
+  return draft.kit[key];
+}
+const TODAY = isoD(new Date());
+const daysTo = d => Math.round((Date.parse(d + 'T00:00:00') - Date.parse(TODAY + 'T00:00:00')) / 864e5);
+function periodState(t) {
+  const ps = (t.periods || []).filter(p => p.from && p.to);
+  if (!ps.length) return ['ללא תקופת הצפנה', 'warn', false];
+  const cur = ps.find(p => p.from <= TODAY && TODAY <= p.to);
+  const next = ps.filter(p => p.from > TODAY).sort((a, b) => a.from.localeCompare(b.from))[0];
+  if (cur) {
+    const left = daysTo(cur.to);
+    if (left <= 7 && !(next && daysTo(next.from) <= left + 1)) return [`${cur.name || 'תקופה'} מסתיימת בעוד ${left} ימים`, 'warn', false];
+    return [`בתוקף · ${cur.name || 'תקופה'} עד ${fmtD(cur.to + 'T00:00:00')}`, 'good', true];
+  }
+  if (next) return [`${next.name || 'תקופה'} מתחילה ${fmtD(next.from + 'T00:00:00')}`, 'warn', false];
+  return ['תקופת ההצפנה פגה', 'crit', false];
+}
+function periodBlock(t, canEdit) {
+  const ps = t.periods || [];
+  const d = ui.perDraft[t.id] || (ui.perDraft[t.id] = { name: '', from: '', to: '' });
+  const st = periodState(t);
+  return `<div class="card formgrid" style="background:var(--sunk)"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><span class="lbl">תקופות הצפנה (עד 2)</span>${pill(st)}</div>
+    ${ps.length ? `<div class="list">${ps.map(p => { const live = p.from <= TODAY && TODAY <= p.to, past = p.to < TODAY; return `<div class="item" style="padding:8px 12px"><div class="head"><div><div class="title">${esc(p.name || 'תקופה')}</div><div class="meta num">${fmtD(p.from + 'T00:00:00')} – ${fmtD(p.to + 'T00:00:00')}</div></div><div class="actions">${pill(live ? ['בתוקף', 'good'] : past ? ['הסתיימה', ''] : ['עתידית', 'acc'])}${canEdit ? `<button class="btn sm" data-act="delPeriod" data-v="${esc(t.id)}|${esc(p.id)}">הסרה</button>` : ''}</div></div></div>`; }).join('')}</div>` : '<div class="small muted">לא הוגדרה תקופת הצפנה.</div>'}
+    ${canEdit && ps.length < 2 ? `<div class="toolbar"><div class="field"><label for="pn_${esc(t.id)}">שם התקופה</label><input type="text" id="pn_${esc(t.id)}" data-bind="per.${esc(t.id)}.name" value="${esc(d.name)}" placeholder="למשל: 1/27"></div>
+      <div class="field"><label for="pf_${esc(t.id)}">מתאריך</label><input type="date" id="pf_${esc(t.id)}" data-bind="per.${esc(t.id)}.from" value="${esc(d.from)}"></div>
+      <div class="field"><label for="pt_${esc(t.id)}">עד תאריך</label><input type="date" id="pt_${esc(t.id)}" data-bind="per.${esc(t.id)}.to" value="${esc(d.to)}"></div></div>
+      <div class="actions"><button class="btn sm primary" data-act="addPeriod" data-v="${esc(t.id)}">הוספת תקופה</button></div>` : canEdit ? '<div class="small muted">לפריט כבר יש שתי תקופות. הסר אחת כדי להוסיף חדשה.</div>' : ''}
+  </div>`;
+}
+const isUnit = id => S.nodes[id] && S.nodes[id].level !== 'role';
+const levelOf = id => S.nodes[id]?.level;
+const topOf = id => { let n = S.nodes[id]; if (!n) return id; if (!n.parent) return n.id; while (S.nodes[n.parent] && S.nodes[n.parent].parent) n = S.nodes[n.parent]; return n.level === 'role' ? rootNode().id : n.id; };
+const MEM = () => Object.values(S.members || {});
+const isOwner = () => !!ME.owner;
+const viewRoot = () => { if (isOwner()) return rootNode().id; const m = ME.member; return m && S.nodes[m.unit] ? m.unit : null; };
+const canSignFor = u => isOwner() || !!(ME.member && ME.member.active && ME.member.canSign && ME.member.unit === u);
+const isAdminAt = u => isOwner() || !!(ME.member && ME.member.active && ME.member.isAdmin && ME.member.unit === u);
+const isBrigadeAdmin = () => isOwner() || (rootNode() && isAdminAt(rootNode().id));
+const memberLabel = m => m ? `${m.roleTitle ? m.roleTitle + ' · ' : ''}${m.name || m.email}` : '';
+const signerLabel = memberLabel;
+const hasPermPage = id => { const n = S.nodes[id]; if (!n || n.level === 'role') return false; const ok = !n.parent || (S.nodes[n.parent] && !S.nodes[n.parent].parent); return ok && isAdminAt(id); };
+const permOwner = id => topOf(id);
+const permScope = () => { const id = me(); return [id, ...kids(id).filter(k => k.level !== 'role').map(k => k.id)]; };
+const permTarget = () => { const sc = permScope(); return sc.includes(ui.permUnit) ? ui.permUnit : me(); };
+function currentSigner(required = true) {
+  const id = me();
+  if (canSignFor(id)) {
+    const m = ME.member, own = m && m.unit === id;
+    return { id: ME.email, label: own ? memberLabel(m) : `${ME.name || ME.email} (בעל המערכת)`, s: { canReceive: isOwner() || !!(m && m.canReceive) } };
+  }
+  if (required) fail(ME.member && ME.member.unit === id ? 'אין לך הרשאת חתימה. מנהל ההרשאות של היחידה יכול להוסיף אותה.' : `אפשר לחתום רק בשם היחידה שלך (${nm(ME.member && ME.member.unit)}).`);
+  return null;
+}
+function signerBar() {
+  const sg = currentSigner(false);
+  if (sg) return `<div class="scope">חותם: <b>${esc(sg.label)}</b></div>`;
+  return `<div class="item sev-warn"><div class="small">צפייה בלבד ב${esc(nm(me()))}. ${ME.member && ME.member.unit === me() ? 'אין לך הרשאת חתימה. מנהל ההרשאות של היחידה יכול להוסיף אותה.' : 'ניפוק, חתימה ואישור אפשריים רק בשם היחידה שלך.'}</div></div>`;
+}
+
+/* ---------- writes ---------- */
+const col = c => db.collection(c);
+const put = (c, id, data) => col(c).doc(id).set(data);
+const patch = (c, id, data) => col(c).doc(id).update(data);
+async function addQty(h, s, d) { const k = h + '__' + s; await put('stock', k, { holder: h, sku: s, qty: Math.max(0, qtyOf(h, s) + d) }); }
+async function run(fn, ok) {
+  if (busy) return; busy = true;
+  try { await fn(); if (ok) toast(ok); }
+  catch (e) { console.error(e); toast(e && e.userMsg ? e.userMsg : e && e.code === 'permission-denied' ? 'אין לך הרשאה לפעולה הזו.' : 'השמירה נכשלה. בדוק את החיבור ונסה שוב.'); }
+  finally { busy = false; render(); }
+}
+const fail = m => { const e = new Error(m); e.userMsg = m; throw e; };
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2800); }
+
+/* ---------- small renderers ---------- */
+const pill = ([t, c]) => `<span class="pill ${c || ''}">${esc(t)}</span>`;
+const tzNo = id => `<span class="mono tzno" dir="ltr">צ׳ ${esc(id)}</span>`;
+const empty = (b, t) => `<div class="empty"><b>${esc(b)}</b>${esc(t || '')}</div>`;
+function moveSummary(m) {
+  const parts = (m.lines || []).map(l => `${esc(skuName(l.sku))} × <span class="num">${l.qty}</span>`);
+  (m.tz || []).forEach(t => parts.push(`${esc(skuName(S.tz[t]?.sku))} ${tzNo(t)}`));
+  return parts.join(' · ') || '—';
+}
+function moveItem(m, actions = '') {
+  const from = esc(sideName(m.from, m.fromExt || (m.type === 'receive' ? 'ספק / מחסן חיצוני' : '')));
+  const sev = m.status === 'pending' || m.status === 'awaiting' ? 'sev-warn' : '';
+  return `<div class="item ${sev}">
+    <div class="head"><div><div class="title">${MTYPE[m.type] || m.type}: ${from} ← ${esc(sideName(m.to, m.toExt))}</div>
+    <div class="meta">${fmtDT(m.createdAt)}${m.signedAt ? ' · נחתם ' + fmtDT(m.signedAt) : ''}</div></div>${pill(MSTAT[m.status] || [m.status])}</div>
+    <div class="small">${moveSummary(m)}</div>
+    ${m.createdBy || m.signedBy || m.approvedBy ? `<div class="meta">${m.createdBy ? 'נשלח ע״י ' + esc(m.createdBy) : ''}${m.approvedBy ? ' · אושר ע״י ' + esc(m.approvedBy) : ''}${m.signedBy ? ' · ' + (m.status === 'rejected' ? 'נדחה' : 'נחתם') + ' ע״י ' + esc(m.signedBy) : ''}</div>` : ''}
+    ${m.note ? `<div class="meta">הערה: ${esc(m.note)}</div>` : ''}
+    <div class="actions">${actions || ''}<button class="linkbtn small" data-act="openReport" data-v="${m.id}">דוח החתמה${m.kit && Object.keys(m.kit).length ? ' · כולל קיטים' : ''}</button>${m.kitShort ? '<span class="pill crit">חוסר בקיט</span>' : ''}</div>
+  </div>`;
+}
+
+/* ---------- header & drawer ---------- */
+const SV = p => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICO = {
+  overview: SV('<path d="M3 11l9-7 9 7v9H3z"/><path d="M9 20v-6h6v6"/>'),
+  stock: SV('<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'),
+  moves: SV('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
+  weekly: SV('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/>'),
+  incidents: SV('<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'),
+  kits: SV('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
+  free: SV('<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'),
+  tzrep: SV('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
+  desc: SV('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  descs: SV('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/>'),
+  loans: SV('<path d="M7 7h11l-3-3M17 17H6l3 3"/>'),
+  unit: SV('<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')
+};
+let menuOpen = false;
+function renderDrawer() {
+  const el = document.getElementById('drawer');
+  if (!menuOpen) { el.innerHTML = ''; return; }
+  const order = desc(viewRoot());
+  const opts = order.map(id => `<option value="${esc(id)}" ${id === me() ? 'selected' : ''}>${'\u00A0\u00A0\u00A0'.repeat(depth(id))}${esc(nm(id))}</option>`).join('');
+  el.innerHTML = `<div class="drawer-bg" data-act="menuClose"></div><nav class="drawer" aria-label="עמודים">
+    <div class="drawer-h"><b>${esc(rootNode().name)}</b><button class="xbtn" data-act="menuClose" aria-label="סגירה">×</button></div>
+    <div class="drawer-who"><span class="who">${esc(ME.name || '')}</span><span dir="ltr">${esc(ME.email)}</span><span>${isOwner() ? 'בעל המערכת' : esc(memberLabel(ME.member)) + ' · ' + esc(nm(ME.member.unit))}</span>${order.length > 1 ? `<label for="acting">צפייה ביחידה</label><select id="acting">${opts}</select>` : ''}</div>
+    ${navTabs().map(([k, l, b]) => `<button class="navi" data-act="tab" data-v="${k}" ${ui.tab === k ? 'aria-current="page"' : ''}>${ICO[k] || ''}<span>${l}</span>${b ? `<span class="badge">${b}</span>` : ''}</button>`).join('')}
+    <button class="navi out" data-act="logout">${SV('<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>')}<span>יציאה</span></button>
+  </nav>`;
+}
+function navTabs() {
+  const c = counts();
+  const t = [['overview', 'דף ראשי', c.inc], ['free', 'מלאי חופשי', 0], ['moves', 'קבלות', c.toSign], ['tzrep', 'דוח צ׳', c.myOpen], ['desc', 'מתאר ציוד', 0]];
+  if (!S.nodes[me()].parent) t.push(['loans', 'השאלות מיחידות', c.loansDue], ['descs', 'מתארים', 0], ['kits', 'קיטים', 0]);
+  if (hasPermPage(me())) t.push(['unit', 'הרשאות', permScope().filter(u => !MEM().some(m => m.active && m.canSign && m.unit === u)).length]);
+  return t;
+}
+/* ---------- legacy header ---------- */
+function renderHeader() {
+  let tabs = navTabs();
+  if (!tabs.some(t => t[0] === ui.tab)) ui.tab = 'overview';
+  const alerts = tabs.reduce((x, t) => x + (+t[2] || 0), 0);
+  cur = tabs.find(t => t[0] === ui.tab);
+  document.getElementById('top').innerHTML = `<div class="brandx"><span class="markx">${ICO.stock}</span><div style="min-width:0"><div class="b1">${esc(rootNode().name)} · מלאי</div><div class="b2">${esc(nm(me()))}${where(me()) ? ' · ' + esc(where(me())) : ''}</div></div></div>
+    <button class="burger" data-act="menu" aria-label="תפריט" aria-expanded="${menuOpen}">${alerts ? `<span class="badge">${alerts}</span>` : ''}<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h18"/><path d="M4 13h14"/><path d="M4 19h10"/></svg></button>`;
+  ui.pageTitle = cur ? cur[1] : '';
+  renderDrawer();
+}
+function counts() {
+  const id = me(), sc = new Set(desc(id));
+  const toSign = Object.values(S.moves).filter(m => (m.status === 'pending' && m.to === id) || (m.status === 'awaiting' && m.approver === id)).length;
+  const myOpen = liveTz().filter(t => t.holder === id && activeTz(t) && !confirmOf(t)).length;
+  const inc = Object.values(S.incidents).filter(i => sc.has(i.holder) && (i.status === 'open' || i.status === 'investigating')).length;
+  const loansDue = S.nodes[id].parent ? 0 : Object.values(S.loans).filter(l => l.status === 'active' && daysTo(l.due) <= 7).length;
+  return { toSign, myOpen, inc, loansDue };
+}
+
+/* ---------- overview ---------- */
+function renderOverview() {
+  const id = me(), n = S.nodes[id], sc = new Set(desc(id));
+  const tzs = liveTz().filter(t => sc.has(t.holder) && activeTz(t));
+  const done = tzs.filter(confirmOf).length;
+  const pct = tzs.length ? Math.round(done / tzs.length * 100) : 100;
+  const logat = Object.values(S.stock).filter(s => sc.has(s.holder) && s.qty > 0);
+  const logatQty = logat.reduce((a, s) => a + s.qty, 0);
+  const skuCount = new Set(logat.map(s => s.sku)).size;
+  const c = counts();
+  const ph = phase();
+  const meterCls = pct >= 90 ? '' : ph === 'open' ? 'warn' : 'crit';
+
+  const children = kids(id);
+  const rowFor = (k, own) => {
+    const s2 = new Set(own ? [k.id] : desc(k.id));
+    const t2 = liveTz().filter(t => s2.has(t.holder) && activeTz(t));
+    const d2 = t2.filter(confirmOf).length;
+    const q2 = Object.values(S.stock).filter(s => s2.has(s.holder)).reduce((a, s) => a + s.qty, 0);
+    const p2 = t2.length ? Math.round(d2 / t2.length * 100) : null;
+    const cls = p2 === null ? '' : p2 === 100 ? 'good' : ph === 'open' ? 'warn' : 'crit';
+    return `<tr ${own ? '' : `class="click" data-act="goto" data-v="${esc(k.id)}"`}><td>${own ? 'מחסן ' + esc(nm(k.id)) : esc(nm(k.id))}<div class="small muted">${own ? 'ציוד שחתום ישירות על היחידה' : LEVEL[k.level]}</div></td><td class="num">${q2}</td><td class="num">${t2.length}</td><td>${p2 === null ? '<span class="muted">—</span>' : `<span class="pill ${cls}">${d2}/${t2.length} · ${p2}%</span>`}</td></tr>`;
+  };
+  const ownHas = n.level !== 'role' && (holdings(id).length || liveTz().some(t => t.holder === id));
+  const rows = (ownHas ? rowFor(n, true) : '') + children.map(k => rowFor(k, false)).join('');
+  const mixed = new Set(children.map(k => k.level === 'role')).size > 1;
+  const colName = mixed ? 'יחידה / בעל תפקיד' : children[0]?.level === 'role' ? 'בעל תפקיד' : 'יחידה';
+
+  const byHolder = {};
+  tzs.filter(t => !confirmOf(t)).forEach(t => (byHolder[t.holder] = byHolder[t.holder] || []).push(t));
+  const phLabel = { open: ['ממתין', ''], overdue: ['באיחור', 'warn'], escalated: ['הוסלם', 'crit'] }[ph];
+  const pendingList = Object.entries(byHolder).map(([h, list]) => {
+    const incId = 'unc__' + WEEK + '__' + h;
+    const hasInc = !!S.incidents[incId];
+    const btn = ph === 'escalated' && !hasInc && h !== id ? `<button class="btn sm crit" data-act="openUnc" data-v="${esc(h)}">פתח חריג</button>` : hasInc ? '<span class="pill crit">נפתח חריג</span>' : '';
+    return `<div class="item ${ph === 'escalated' ? 'sev-crit' : ph === 'overdue' ? 'sev-warn' : ''}"><div class="head"><div><div class="title">${esc(nm(h))}</div><div class="meta">${esc(where(h))}</div></div>${pill(phLabel)}</div>
+      <div class="small">${list.length} פריטים: ${list.map(t => tzNo(t.id)).join(' ')}</div>${btn ? `<div class="actions">${btn}</div>` : ''}</div>`;
+  }).join('');
+
+  const recent = Object.values(S.moves).filter(m => sc.has(m.to) || sc.has(m.from)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 5);
+  const isRoot = !n.parent;
+  const loansDue = isRoot ? Object.values(S.loans).filter(l => l.status === 'active' && daysTo(l.due) <= 7).sort((a, b) => a.due.localeCompare(b.due)) : [];
+  const perBad = tzs.map(t => [t, periodState(t)]).filter(([, st]) => !st[2]).sort((a, b) => (a[1][1] === 'crit' ? 0 : 1) - (b[1][1] === 'crit' ? 0 : 1));
+  const we = weekEnd();
+  return `
+  <div class="demo">אין להזין למערכת מידע מסווג ללא אישור אבטחת מידע של היחידה.</div>
+  <div class="scope">תחום התצוגה: <b>${esc(nm(id))}</b>${where(id) ? ' · ' + esc(where(id)) : ''}</div>
+  <div class="stats">
+    <div class="stat lead"><span class="k">אישורי צ׳ השבוע</span><span class="v">${done}<small> / ${tzs.length}</small></span><div class="meter ${meterCls}"><i style="width:${pct}%"></i></div></div>
+    <div class="stat"><span class="k">פריטי צ׳ בתחום</span><span class="v">${tzs.length}</span></div>
+    <div class="stat"><span class="k">לוג״ת בתחום</span><span class="v">${logatQty}<small> · ${skuCount} מק״טים</small></span></div>
+    <div class="stat"><span class="k">ממתין לפעולתך · חריגים</span><span class="v">${c.toSign}<small> · ${c.inc} חריגים</small></span></div>
+  </div>
+  ${children.length ? `<section class="block"><h2>מצב לפי ${mixed ? 'יחידות ובעלי תפקיד' : children[0].level === 'role' ? 'בעלי תפקיד' : 'יחידות'}<small>לחיצה על שורה מעבירה לתצוגת היחידה</small></h2>
+    <div class="tablewrap"><table><thead><tr><th>${colName}</th><th>לוג״ת (יח׳)</th><th>פריטי צ׳</th><th>אישור שבועי</th></tr></thead><tbody>${rows}</tbody></table></div></section>` : ''}
+  <section class="block"><h2>טרם אישרו את השבוע<small>שבוע ${fmtD(WEEK + 'T00:00:00')}–${fmtD(we)} · תזכורת ג׳ 12:00 · הסלמה ה׳</small></h2>
+    ${pendingList ? `<div class="list">${pendingList}</div>` : empty('כל פריטי הצ׳ בתחום אושרו השבוע', '')}</section>
+  <section class="block"><h2>תקופות הצפנה<small>${tzs.length - perBad.length} מתוך ${tzs.length} פריטי צ׳ בתוקף</small></h2>
+    ${perBad.length ? `<div class="list">${perBad.slice(0, 12).map(([t, st]) => `<div class="item ${st[1] === 'crit' ? 'sev-crit' : 'sev-warn'}"><div class="head"><div><div class="title">${tzNo(t.id)} <span class="small muted">${esc(skuName(t.sku))}</span></div><div class="meta">${esc(fullName(t.holder))}</div></div>${pill(st)}</div><div class="actions"><button class="btn sm" data-act="detail" data-v="${esc(t.id)}">עדכון תקופה</button></div></div>`).join('')}${perBad.length > 12 ? `<div class="small muted">ועוד ${perBad.length - 12} פריטים. הרשימה המלאה בדוח צ׳.</div>` : ''}</div>` : empty('לכל פריטי הצ׳ בתחום יש תקופת הצפנה בתוקף', '')}</section>
+  ${loansDue.length ? `<section class="block"><h2>השאלות שמועד החזרתן קרוב</h2><div class="list">${loansDue.map(l => `<div class="item ${daysTo(l.due) < 0 ? 'sev-crit' : 'sev-warn'}"><div class="head"><div><div class="title">מ${esc(l.from)}</div><div class="meta">${loanSummary(l)}</div></div>${pill(loanDueState(l))}</div><div class="actions"><button class="btn sm" data-act="tab" data-v="loans">לעמוד ההשאלות</button></div></div>`).join('')}</div></section>` : ''}
+  <section class="block"><h2>חריגים</h2>${renderIncidents()}</section>
+  <section class="block"><h2>תנועות אחרונות</h2>${recent.length ? `<div class="list">${recent.map(m => moveItem(m)).join('')}</div>` : empty('אין עדיין תנועות בתחום', 'ניפוק, זיכוי והעברה נעשים בעמוד "קבלות".')}</section>`;
+}
+
+/* ---------- tz detail sheet ---------- */
+function renderSheet() {
+  const box = document.getElementById('sheet');
+  if (ui.report && S.moves[ui.report]) { box.innerHTML = renderReport(S.moves[ui.report]); return; }
+  const t = ui.detail && S.tz[ui.detail];
+  if (!t) { box.innerHTML = ''; return; }
+  const hist = Object.values(S.moves).filter(m => (m.tz || []).includes(t.id)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const confs = Object.values(S.confirms).filter(c => c.tz === t.id).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+  const canEdit = desc(me()).includes(t.holder) && t.holder !== me() || S.nodes[me()]?.level === 'brigade';
+  box.innerHTML = `<div class="sheet-bg" data-act="closeSheet" data-v="bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="כרטיס פריט צ׳">
+    <div class="head" style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2 style="font-size:18px">${tzNo(t.id)}</h2><button class="btn sm" data-act="closeSheet">סגירה</button></div>
+    <dl class="kv"><dt>שם מכשיר</dt><dd>${esc(skuName(t.sku))}</dd><dt>צ׳</dt><dd>${tzNo(t.id)}</dd><dt>מס׳ סידורי</dt><dd class="mono" dir="ltr" style="text-align:right">${esc(t.serial || '—')}</dd>
+      <dt>שייכות</dt><dd>${ownerCell(t)}${t.loanId && S.loans[t.loanId] ? `<div class="small muted">להחזרה עד ${fmtD(S.loans[t.loanId].due + 'T00:00:00')}</div>` : ''}</dd>
+      <dt>מוחתם ל</dt><dd>${signedTo(t) ? esc(fullName(t.holder)) : 'לא מוחתם · במחסן ' + esc(nm(t.holder))}</dd><dt>מאז</dt><dd>${fmtD(t.since)}</dd>
+      <dt>מצב</dt><dd>${canEdit ? `<select id="tzStatus" data-act-change="tzStatus" data-v="${esc(t.id)}">${Object.entries(TZSTAT).map(([k, [l]]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : pill(TZSTAT[t.status] || [t.status])}</dd></dl>
+    ${periodBlock(t, canEdit || t.holder === me())}
+    ${t.kit && (t.kit.items || []).length ? `<div><div class="lbl" style="margin-bottom:6px">תכולת קיט נוכחית${t.kit.at ? ' · עודכן ' + fmtD(t.kit.at) : ''}</div><div class="checks">${t.kit.items.map(c => `<div class="check" style="cursor:default">${c.have ? '<span class="pill good">יש</span>' : '<span class="pill crit">חסר</span>'} ${esc(c.name)} <span class="small muted num">× ${c.qty}</span></div>`).join('')}</div></div>` : (kitFor(t.sku) ? '<div class="small muted">לפריט מוגדר קיט, אך תכולתו טרם תועדה.</div>' : '')}
+    <div><div class="lbl" style="margin-bottom:6px">אישורים שבועיים</div>${confs.length ? `<div class="timeline">${confs.slice(0, 8).map(c => `<div>שבוע ${fmtD(c.week + 'T00:00:00')} · ${pill(ANS[c.answer])} <span class="muted small">${esc(nm(c.holder))}${c.note ? ' · ' + esc(c.note) : ''}</span></div>`).join('')}</div>` : '<div class="muted small">אין עדיין אישורים.</div>'}</div>
+    <div><div class="lbl" style="margin-bottom:6px">היסטוריית תנועות</div>${hist.length ? `<div class="timeline">${hist.map(m => `<div>${fmtD(m.createdAt)} · ${MTYPE[m.type]}: ${esc(sideName(m.from, m.fromExt))} ← ${esc(sideName(m.to, m.toExt))} ${pill(MSTAT[m.status])}</div>`).join('')}</div>` : '<div class="muted small">אין תנועות.</div>'}</div>
+  </div></div>`;
+}
+
+function renderKitPicks() {
+  const blocks = [];
+  draft.tz.forEach(t => { const it = S.tz[t]; if (!it) return; const d = kitDraft(t, it.sku, it.kit && it.kit.items); if (d) blocks.push([t, `${tzNo(t)} ${esc(skuName(it.sku))}`, d, 1]); });
+  draft.lines.forEach(l => { if (!l.sku) return; const d = kitDraft('L:' + l.sku, l.sku, null); if (d) blocks.push(['L:' + l.sku, esc(skuName(l.sku)), d, parseInt(l.qty, 10) || 0]); });
+  if (!blocks.length) return '';
+  return `<div class="field"><span class="lbl">תכולת קיט · סמן מה נשלח עם כל פריט</span><div class="list">${blocks.map(([key, label, d, mult]) => `<div class="item" style="background:var(--sunk)"><div class="title small">${label}</div><div class="checks">${d.map(c => `<label class="check"><input type="checkbox" id="kc_${safeId(key)}_${safeId(c.id)}" data-act="kitInc" data-v="${esc(key)}|${esc(c.id)}" ${c.inc ? 'checked' : ''}> ${esc(c.name)} <span class="small muted num">× ${c.qty * (mult || 1)}</span></label>`).join('')}</div></div>`).join('')}</div></div>`;
+}
+
+/* ---------- signing report ---------- */
+function reportKeys(m) {
+  const out = [];
+  (m.lines || []).forEach(l => out.push({ key: 'L:' + l.sku, title: `${esc(skuName(l.sku))} × <span class="num">${l.qty}</span>`, kit: (m.kit || {})['L:' + l.sku] }));
+  (m.tz || []).forEach(t => out.push({ key: t, title: `${tzNo(t)} ${esc(skuName(S.tz[t]?.sku))}`, kit: (m.kit || {})[t] }));
+  return out;
+}
+function recvState(m, key) {
+  ui.recv[m.id] = ui.recv[m.id] || {};
+  if (!ui.recv[m.id][key]) ui.recv[m.id][key] = ((m.kit || {})[key] || []).map(c => ({ ...c, got: !!c.inc }));
+  return ui.recv[m.id][key];
+}
+function renderReport(m) {
+  const signing = m.status === 'pending' && m.to === me();
+  const keys = reportKeys(m);
+  const rowsHtml = keys.map(k => {
+    const kit = k.kit || [];
+    const recv = signing ? recvState(m, k.key) : ((m.kitRecv || {})[k.key] || null);
+    return `<div class="item"><div class="title">${k.title}</div>
+      ${kit.length ? `<div class="tablewrap" style="border:0"><table><thead><tr><th>אמצעי בקיט</th><th>כמות</th><th>נשלח</th><th>התקבל</th></tr></thead><tbody>${kit.map((c, i) => {
+        const r = recv && recv[i];
+        const got = signing ? `<input type="checkbox" id="rc_${safeId(k.key)}_${safeId(c.id)}" data-act="recvInc" data-v="${esc(m.id)}|${esc(k.key)}|${i}" ${r && r.got ? 'checked' : ''} aria-label="התקבל ${esc(c.name)}">` : r ? (r.got ? '<span class="pill good">כן</span>' : '<span class="pill crit">לא</span>') : '<span class="muted small">—</span>';
+        return `<tr><td>${esc(c.name)}</td><td class="num">${c.qty}</td><td>${c.inc ? '<span class="pill good">כן</span>' : '<span class="pill">לא</span>'}</td><td>${got}</td></tr>`;
+      }).join('')}</tbody></table></div>` : '<div class="small muted">פריט ללא קיט</div>'}</div>`;
+  }).join('');
+  const n = S.nodes[me()];
+  const signerSel = signing ? signerBar() : '';
+  return `<div class="sheet-bg" data-act="closeSheet" data-v="bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="דוח החתמה">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2 style="font-size:18px">דוח החתמה · ${MTYPE[m.type] || m.type}</h2><button class="btn sm" data-act="closeSheet">סגירה</button></div>
+    <dl class="kv"><dt>מוסר</dt><dd>${m.from ? esc(fullName(m.from)) : esc(m.fromExt || 'ספק / מחסן חיצוני')}</dd><dt>מקבל</dt><dd>${m.to ? esc(fullName(m.to)) : esc(m.toExt || 'גורם חיצוני')}</dd><dt>נשלח</dt><dd>${fmtDT(m.createdAt)}${m.createdBy ? ' · ' + esc(m.createdBy) : ''}</dd>
+      ${m.signedAt ? `<dt>${m.status === 'rejected' ? 'נדחה' : 'נחתם'}</dt><dd>${fmtDT(m.signedAt)}${m.signedBy ? ' · ' + esc(m.signedBy) : ''}</dd>` : ''}<dt>סטטוס</dt><dd>${pill(MSTAT[m.status] || [m.status])}</dd>
+      ${m.note ? `<dt>הערה</dt><dd>${esc(m.note)}</dd>` : ''}</dl>
+    ${m.kitShort ? `<div class="item sev-crit"><div class="small">בקבלה חסרו ${m.kitShort} אמצעים מתוך מה שנשלח. נפתח אירוע חריג.</div></div>` : ''}
+    <div class="list">${rowsHtml}</div>
+    ${signing ? `<div class="card formgrid">${signerSel}<div class="small muted">סמן כל אמצעי שהתקבל בפועל. אמצעי שנשלח ולא סומן ייפתח כחוסר.</div><div class="actions"><button class="btn primary" data-act="sign" data-v="${esc(m.id)}">חתימה על הדוח וקבלת הציוד</button><button class="btn crit" data-act="reject" data-v="${esc(m.id)}">דחייה</button></div></div>` : ''}
+  </div></div>`;
+}
+
+/* ---------- kits ---------- */
+function renderKits() {
+  const root = rootNode(), canEdit = isBrigadeAdmin() && me() === root.id;
+  const kits = Object.values(S.kits).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
+  const free = Object.values(S.skus).filter(x => !kitFor(x.id)).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  const count = sku => liveTz().filter(t => t.sku === sku && activeTz(t)).length;
+  const cards = kits.map(k => {
+    const a = ui.kitAdd[k.id] || {};
+    return `<div class="card formgrid"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><h3 style="font-size:16px">${esc(k.name)}</h3><div class="small muted">פריט ראשי: ${esc(skuName(k.sku))}${S.skus[k.sku]?.kind === 'tz' ? ' · ' + count(k.sku) + ' פריטי צ׳ במערכת' : ''}</div></div>${canEdit ? `<button class="btn sm crit" data-act="delKit" data-v="${esc(k.id)}">מחיקת קיט</button>` : ''}</div>
+      ${(k.items || []).length ? `<div class="tablewrap"><table><thead><tr><th>אמצעי</th><th>כמות לפריט</th>${canEdit ? '<th></th>' : ''}</tr></thead><tbody>${k.items.map(c => `<tr><td>${esc(c.name)}</td><td class="num">${c.qty}</td>${canEdit ? `<td><button class="btn sm" data-act="delComp" data-v="${esc(k.id)}|${esc(c.id)}">הסרה</button></td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="small muted">עדיין אין אמצעים בקיט.</div>'}
+      ${canEdit ? `<div class="toolbar"><div class="field"><label for="kcn_${safeId(k.id)}">אמצעי נוסף</label><input type="text" id="kcn_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.name" value="${esc(a.name || '')}" placeholder="למשל: סוללה"></div><div class="field" style="flex:0 1 100px"><label for="kcq_${safeId(k.id)}">כמות</label><input type="number" min="1" id="kcq_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.qty" value="${esc(a.qty || '1')}"></div></div><div class="actions"><button class="btn sm" data-act="addComp" data-v="${esc(k.id)}">הוספה לקיט</button></div>` : ''}
+    </div>`;
+  }).join('');
+  return `<div class="scope">קיט מגדיר אילו אמצעים מגיעים יחד עם פריט ראשי. בכל ניפוק השולח מסמן מה נכלל, והמקבל מאשר בדוח ההחתמה מה התקבל.</div>
+  ${kits.length ? `<div class="list">${cards}</div>` : empty('עדיין לא הוגדרו קיטים', canEdit ? 'צור קיט חדש למטה.' : 'קיטים מגדירים בעמוד הקיטים של החטיבה.')}
+  ${canEdit ? `<section class="block"><h2>קיט חדש</h2><div class="card formgrid"><div class="toolbar">
+    <div class="field"><label for="nkSku">פריט ראשי</label><select id="nkSku" data-bind="newKit.sku"><option value="">בחר פריט…</option>${free.map(x => `<option value="${esc(x.id)}" ${ui.newKit.sku === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
+    <div class="field"><label for="nkName">שם הקיט</label><input type="text" id="nkName" data-bind="newKit.name" value="${esc(ui.newKit.name)}" placeholder="למשל: קיט מכשיר 710"></div>
+  </div><div class="actions"><button class="btn primary" data-act="addKit">יצירת קיט</button></div></div></section>` : '<div class="small muted">רק החטיבה יכולה להגדיר ולערוך קיטים.</div>'}`;
+}
+
+/* ---------- moves ---------- */
+function allowedTypes() {
+  const n = S.nodes[me()];
+  const t = [];
+  if (kids(me()).length) t.push('issue');
+  if (n.parent) t.push('return');
+  if (n.parent && kids(n.parent).some(k => k.id !== me() && k.level === n.level)) t.push('transfer');
+  return t;
+}
+function targetsFor(type) {
+  const n = S.nodes[me()];
+  if (type === 'issue') return kids(me()).map(k => k.id);
+  if (type === 'return') return [n.parent];
+  if (type === 'transfer') return kids(n.parent).filter(k => k.id !== me() && k.level === n.level).map(k => k.id);
+  return [];
+}
+function renderMoves() {
+  const id = me(), n = S.nodes[id], sc = new Set(desc(id));
+  const types = allowedTypes();
+  if (!types.includes(draft.type)) draft.type = types[0] || null;
+  const targets = targetsFor(draft.type);
+  if (!targets.includes(draft.target)) draft.target = targets.length === 1 ? targets[0] : '';
+  const myLogat = holdings(id).filter(s => S.skus[s.sku]?.kind !== 'tz');
+  const myTz = liveTz().filter(t => t.holder === id && !t.pending && activeTz(t)).sort((a, b) => a.id.localeCompare(b.id));
+
+  const lines = draft.lines.map((l, i) => {
+    const max = l.sku ? avail(id, l.sku) : 0;
+    return `<div class="line"><select id="ln${i}s" data-bind="line.${i}.sku" aria-label="פריט"><option value="">בחר פריט…</option>${myLogat.map(s => `<option value="${esc(s.sku)}" ${l.sku === s.sku ? 'selected' : ''}>${esc(skuName(s.sku))} (זמין ${avail(id, s.sku)})</option>`).join('')}</select>
+      <input type="number" id="ln${i}q" data-bind="line.${i}.qty" min="1" ${l.sku ? `max="${max}"` : ''} value="${esc(l.qty)}" aria-label="כמות" placeholder="כמות">
+      <button class="btn sm" data-act="delLine" data-v="${i}" aria-label="הסר שורה">הסר</button></div>`;
+  }).join('');
+
+  const form = types.length ? `<div class="card formgrid">
+    <div class="seg" role="group" aria-label="סוג פעולה">${types.map(t => `<button data-act="dtype" data-v="${t}" aria-pressed="${draft.type === t}">${MTYPE[t]}</button>`).join('')}</div>
+    <div class="small muted">${draft.type === 'issue' ? 'ניפוק לדרג שמתחתיך. הציוד עובר רק אחרי שהמקבל חותם.' : draft.type === 'return' ? 'החזרת ציוד לדרג שמעליך. נסגר כשהמקבל מאשר קבלה.' : 'העברה ליחידה מקבילה. דורשת אישור הדרג המשותף ואז חתימת המקבל.'}</div>
+    <div class="field"><label for="dTarget">${draft.type === 'return' ? 'מוחזר אל' : 'נמסר אל'}</label><select id="dTarget" data-bind="draft.target"><option value="">בחר…</option>${targets.map(t => `<option value="${esc(t)}" ${draft.target === t ? 'selected' : ''}>${esc(nm(t))}</option>`).join('')}</select></div>
+    <div class="field"><span class="lbl">ציוד לוג״ת</span>${myLogat.length ? `${lines}<div><button class="linkbtn" data-act="addLine">+ הוספת פריט לוג״ת</button></div>` : '<span class="small muted">אין עליך ציוד לוג״ת זמין.</span>'}</div>
+    <div class="field"><span class="lbl">ציוד צ׳ (${draft.tz.length} נבחרו)</span>${myTz.length ? `<div class="checks">${myTz.map(t => `<label class="check"><input type="checkbox" id="dtz_${esc(t.id)}" data-act="dtz" data-v="${esc(t.id)}" ${draft.tz.includes(t.id) ? 'checked' : ''}> ${tzNo(t.id)} <span class="small muted">${esc(skuName(t.sku))}</span></label>`).join('')}</div>` : '<span class="small muted">אין עליך פריטי צ׳ זמינים.</span>'}</div>
+    ${renderKitPicks()}
+    <div class="field"><label for="dNote">הערה (לא חובה)</label><input type="text" id="dNote" data-bind="draft.note" value="${esc(draft.note)}"></div>
+    <div class="actions"><button class="btn primary" data-act="submitMove">${draft.type === 'transfer' ? 'שליחה לאישור' : 'שליחה לחתימת המקבל'}</button></div>
+  </div>` : empty('אין פעולות זמינות לתפקיד זה', '');
+
+  const toSign = Object.values(S.moves).filter(m => m.status === 'pending' && m.to === id);
+  const toApprove = Object.values(S.moves).filter(m => m.status === 'awaiting' && m.approver === id);
+  const outgoing = Object.values(S.moves).filter(m => openMove(m) && m.from === id);
+  const hist = Object.values(S.moves).filter(m => (sc.has(m.to) || sc.has(m.from)) && !openMove(m)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 15);
+
+  const receive = n.level === 'brigade' ? renderReceive() : '';
+  return `
+  ${signerBar()}
+  ${toSign.length || toApprove.length ? `<section class="block"><h2>ממתין לפעולתך</h2><div class="list">
+    ${toApprove.map(m => moveItem(m, `<button class="btn primary sm" data-act="approve" data-v="${m.id}">אישור ההעברה</button><button class="btn sm crit" data-act="reject" data-v="${m.id}">דחייה</button>`)).join('')}
+    ${toSign.map(m => moveItem(m, `<button class="btn primary sm" data-act="openReport" data-v="${m.id}">פתיחת דוח החתמה וחתימה</button><button class="btn sm crit" data-act="reject" data-v="${m.id}">דחייה</button>`)).join('')}
+  </div></section>` : ''}
+  <section class="block"><h2>פעולה חדשה<small>פועל בתור ${esc(nm(id))}</small></h2>${form}</section>
+  ${receive}
+  ${outgoing.length ? `<section class="block"><h2>שלחת וממתין</h2><div class="list">${outgoing.map(m => moveItem(m, `<button class="btn sm" data-act="cancel" data-v="${m.id}">ביטול</button>`)).join('')}</div></section>` : ''}
+  <section class="block"><h2>היסטוריה בתחום</h2>${hist.length ? `<div class="list">${hist.map(m => moveItem(m)).join('')}</div>` : empty('אין עדיין תנועות שהסתיימו', '')}</section>`;
+}
+function renderReceive() {
+  const skus = Object.values(S.skus).filter(s => s.kind === rcv.kind).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  const allowed = MEM().filter(x => x.active && x.canReceive);
+  const cur = currentSigner(false);
+  const ok = cur && cur.s && cur.s.canReceive;
+  if (!allowed.length && !isOwner()) return `<section class="block"><h2>קליטת ציוד לחטיבה</h2><div class="item sev-warn"><div class="title">לאף משתמש בחטיבה אין הרשאת קליטת אמצעים</div><div class="small muted">את ההרשאה מגדירים בעמוד ההרשאות של החטיבה.</div><div class="actions"><button class="btn sm" data-act="tab" data-v="unit">לעמוד ההרשאות</button></div></div></section>`;
+  return `<section class="block"><h2>קליטת ציוד לחטיבה<small>רק משתמש חטיבתי עם הרשאת קליטת אמצעים יכול לקלוט ציוד מבחוץ</small></h2><div class="card formgrid">
+    ${ok ? `<div class="small"><span class="pill good">מורשה קליטה</span> קולט: ${esc(cur.label)}</div>` : `<div class="item sev-warn"><div class="small">${cur ? `ל${esc(cur.label)} אין הרשאת קליטת אמצעים.` : 'אין לך הרשאת חתימה בחטיבה.'} מורשי קליטה: ${allowed.map(x => esc(memberLabel(x))).join(', ')}.</div></div>`}
+    <div class="seg" role="group" aria-label="סוג ציוד">${[['logat', 'לוג״ת'], ['tz', 'צ׳']].map(([k, l]) => `<button data-act="rkind" data-v="${k}" aria-pressed="${rcv.kind === k}">${l}</button>`).join('')}</div>
+    <div class="field"><label for="rSku">פריט מהקטלוג</label><select id="rSku" data-bind="rcv.sku"><option value="">בחר…</option>${skus.map(s => `<option value="${esc(s.id)}" ${rcv.sku === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}<option value="__new" ${rcv.sku === '__new' ? 'selected' : ''}>+ פריט חדש לקטלוג</option></select></div>
+    ${rcv.sku === '__new' ? `<div class="field"><label for="rNew">שם הפריט החדש</label><input type="text" id="rNew" data-bind="rcv.newName" value="${esc(rcv.newName)}"></div>` : ''}
+    ${rcv.kind === 'logat' ? `<div class="field"><label for="rQty">כמות</label><input type="number" id="rQty" min="1" data-bind="rcv.qty" value="${esc(rcv.qty)}"></div>`
+      : `<div class="field"><label for="rTz">מספרי צ׳ (שורה לכל פריט, אפשר להוסיף מס׳ סידורי אחרי פסיק)</label><textarea id="rTz" data-bind="rcv.tzList" placeholder="900201, SN-A1">${esc(rcv.tzList)}</textarea></div>`}
+    <div class="actions"><button class="btn primary" data-act="receive" ${ok ? '' : 'disabled'}>קליטה למחסן החטיבה</button></div>
+  </div></section>`;
+}
+
+/* ---------- weekly ---------- */
+function renderWeekly() {
+  const id = me();
+  const mine = liveTz().filter(t => t.holder === id && activeTz(t)).sort((a, b) => a.id.localeCompare(b.id));
+  const open = mine.filter(t => !confirmOf(t));
+  const ph = phase();
+  const we = weekEnd();
+  const head = `<div class="card" style="display:grid;gap:6px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><b>שבוע ${fmtD(WEEK + 'T00:00:00')}–${fmtD(we)}</b>${open.length ? pill(ph === 'open' ? ['פתוח לאישור', 'acc'] : ph === 'overdue' ? ['באיחור, נשלחה תזכורת', 'warn'] : ['הוסלם לקצין הקשר הגדודי', 'crit']) : pill(['אושר במלואו', 'good'])}</div>
+    <div class="small muted">אשר לכל פריט צ׳ שחתום עליך אם הוא נמצא פיזית אצלך. "לא נמצא" פותח מיד אירוע חריג ומדווח לדרג הממונה.</div></div>`;
+  if (!mine.length) return head + empty(`אין פריטי צ׳ שחתומים על ${nm(id)}`, 'מי שחתום על צ׳ יראה כאן את הפריטים שלו לאישור. אפשר להחליף "פועל בתור" בראש הדף.');
+  const cards = mine.map(t => {
+    const c = confirmOf(t);
+    const sev = c ? (c.answer === 'here' ? 'sev-good' : c.answer === 'missing' ? 'sev-crit' : 'sev-warn') : '';
+    const btn = (k) => `<button class="btn ${ANS[k][1]} ${c?.answer === k ? 'on' : ''}" data-act="${k === 'here' ? 'ans' : 'ansNote'}" data-v="${esc(t.id)}|${k}" aria-pressed="${c?.answer === k}">${ANS[k][0]}</button>`;
+    const noteOpen = ui.noteFor && ui.noteFor.startsWith(t.id + '|');
+    const nk = noteOpen ? ui.noteFor.split('|')[1] : null;
+    return `<div class="item ${sev}"><div class="head"><div><div class="title">${tzNo(t.id)}</div><div class="meta">${esc(skuName(t.sku))} · חתום מאז ${fmtD(t.since)}</div></div>${c ? `<span class="small muted">נענה ${fmtDT(c.at)}</span>` : ''}</div>
+      <div class="actions">${btn('here')}${btn('missing')}${btn('repair')}</div>
+      ${noteOpen ? `<div class="formgrid"><div class="field"><label for="note_${esc(t.id)}">${nk === 'missing' ? 'מה ידוע על הפריט? (לא חובה)' : 'פרט איפה הפריט נמצא'}</label><textarea id="note_${esc(t.id)}" data-bind="note.${esc(t.id)}">${esc(ui.notes[t.id] || '')}</textarea></div>
+        <div class="actions"><button class="btn ${nk === 'missing' ? 'crit on' : 'warn on'}" data-act="ans" data-v="${esc(t.id)}|${nk}">${nk === 'missing' ? 'דיווח "לא נמצא"' : 'שמירה'}</button><button class="btn" data-act="noteCancel">ביטול</button></div></div>` : ''}
+      ${c?.note ? `<div class="meta">הערה: ${esc(c.note)}</div>` : ''}</div>`;
+  }).join('');
+  return `${head}${signerBar()}${open.length > 1 ? `<div class="actions"><button class="btn primary" data-act="allHere">כל ${open.length} הפריטים שטרם אושרו נמצאים אצלי</button></div>` : ''}<div class="list">${cards}</div>`;
+}
+
+/* ---------- free stock ---------- */
+function renderFree() {
+  const id = me(), n = S.nodes[id], isRole = n.level === 'role';
+  const q = ui.freeQ.trim(), match = x => !q || String(x).includes(q);
+  const logat = holdings(id).filter(x => S.skus[x.sku]?.kind !== 'tz' && match(skuName(x.sku))).sort((a, b) => skuName(a.sku).localeCompare(skuName(b.sku), 'he'));
+  const tzs = liveTz().filter(t => t.holder === id && activeTz(t) && (match(t.id) || match(skuName(t.sku)))).sort((a, b) => skuName(a.sku).localeCompare(skuName(b.sku), 'he') || a.id.localeCompare(b.id));
+  const units = logat.reduce((x, l) => x + l.qty, 0);
+  return `<div class="scope">${isRole ? `ציוד שחתום אישית על <b>${esc(nm(id))}</b>.` : `ציוד שנמצא במחסן של <b>${esc(nm(id))}</b> ולא מוחתם על אף יחידה או בעל תפקיד מתחתיה. זה הציוד הזמין לניפוק.`}</div>
+  <div class="stats"><div class="stat lead"><span class="k">פריטי צ׳ פנויים</span><span class="v">${tzs.length}</span></div><div class="stat"><span class="k">לוג״ת פנוי</span><span class="v">${units}<small> · ${logat.length} מק״טים</small></span></div></div>
+  <div class="toolbar"><div class="field"><label for="freeQ">חיפוש</label><input type="text" id="freeQ" data-bind="freeQ" value="${esc(ui.freeQ)}" placeholder="שם מכשיר או מספר צ׳"></div>${!isRole && kids(id).length ? '<div class="actions"><button class="btn primary" data-act="tab" data-v="moves">ניפוק מהמלאי החופשי</button></div>' : ''}</div>
+  <section class="block"><h2>פריטי צ׳<small>לחיצה פותחת כרטיס פריט</small></h2>${tzs.length ? `<div class="tablewrap"><table><thead><tr><th>שם מכשיר</th><th>צ׳</th><th>תקופות הצפנה</th><th>שייכות</th><th>מצב</th></tr></thead><tbody>${tzs.map(t => `<tr class="click" data-act="detail" data-v="${esc(t.id)}"><td>${esc(skuName(t.sku))}</td><td>${tzNo(t.id)}</td><td>${periodsCell(t)}</td><td>${ownerCell(t)}</td><td>${pill(TZSTAT[t.status] || [t.status])}${t.pending ? ' <span class="pill warn">בתנועה</span>' : ''}</td></tr>`).join('')}</tbody></table></div>` : empty('אין פריטי צ׳ פנויים', '')}</section>
+  <section class="block"><h2>לוג״ת</h2>${logat.length ? `<div class="tablewrap"><table><thead><tr><th>פריט</th><th>כמות במחסן</th><th>זמין לניפוק</th></tr></thead><tbody>${logat.map(l => `<tr><td>${esc(skuName(l.sku))}</td><td class="num">${l.qty}</td><td class="num">${avail(id, l.sku)}</td></tr>`).join('')}</tbody></table></div>` : empty('אין לוג״ת פנוי', '')}</section>`;
+}
+
+/* ---------- tz report ---------- */
+function renderTzReport() {
+  const id = me(), scope = desc(id);
+  if (!ui.repUnit || !scope.includes(ui.repUnit)) ui.repUnit = id;
+  const holders = new Set(desc(ui.repUnit));
+  const q = ui.repQ.trim(), match = x => !q || String(x).includes(q);
+  const f = ui.repF;
+  const rows = liveTz().filter(t => holders.has(t.holder) && (match(t.id) || match(skuName(t.sku)) || match(nm(t.holder)) || match(ownerLabel(t))))
+    .filter(t => f === 'all' || (f === 'signed' && signedTo(t)) || (f === 'free' && !signedTo(t)) || (f === 'alert' && !periodState(t)[2]) || (f === 'loan' && t.loanId) || (f === 'unconf' && activeTz(t) && !confirmOf(t)))
+    .sort((a, b) => skuName(a.sku).localeCompare(skuName(b.sku), 'he') || a.id.localeCompare(b.id));
+  const mine = liveTz().filter(t => t.holder === id && activeTz(t));
+  const unitOpts = scope.filter(u => S.nodes[u].level !== 'role' || liveTz().some(t => t.holder === u)).map(u => `<option value="${esc(u)}" ${u === ui.repUnit ? 'selected' : ''}>${'  '.repeat(depth(u) - depth(id))}${esc(nm(u))}</option>`).join('');
+  return `${mine.length ? `<section class="block"><h2>האישור השבועי שלי<small>${mine.filter(t => !confirmOf(t)).length} פריטים ממתינים לאישור</small></h2>${renderWeekly()}</section>` : ''}
+  <section class="block"><h2>כל פריטי הצ׳<small>${rows.length} פריטים · לחיצה פותחת כרטיס פריט</small></h2>
+  <div class="toolbar"><div class="field"><label for="repUnit">יחידה</label><select id="repUnit" data-bind="repUnit">${unitOpts}</select></div>
+    <div class="field"><label for="repF">סינון</label><select id="repF" data-bind="repF">${[['all', 'הכול'], ['signed', 'מוחתמים'], ['free', 'לא מוחתמים (במחסן)'], ['alert', 'תקופת הצפנה דורשת טיפול'], ['unconf', 'טרם אושרו השבוע'], ['loan', 'בהשאלה']].map(([k, l]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><label for="repQ">חיפוש</label><input type="text" id="repQ" data-bind="repQ" value="${esc(ui.repQ)}" placeholder="שם מכשיר, צ׳ או יחידה"></div></div>
+  ${rows.length ? `<div class="tablewrap"><table><thead><tr><th>שם מכשיר</th><th>צ׳</th><th>תקופות הצפנה</th><th>שייכות</th><th>מוחתם ל</th><th>אישור שבועי</th></tr></thead><tbody>${rows.map(t => { const c = confirmOf(t); return `<tr class="click" data-act="detail" data-v="${esc(t.id)}"><td>${esc(skuName(t.sku))}${t.status !== 'ok' ? '<div>' + pill(TZSTAT[t.status] || [t.status]) + '</div>' : ''}</td><td>${tzNo(t.id)}</td><td>${periodsCell(t)}</td><td>${ownerCell(t)}</td><td>${signedCell(t)}</td><td>${c ? pill(ANS[c.answer]) : activeTz(t) ? '<span class="pill">טרם אושר</span>' : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : empty('אין פריטים שמתאימים לסינון', '')}</section>`;
+}
+
+/* ---------- equipment descriptor ---------- */
+function descCounts(unitId) {
+  const sc = new Set(desc(unitId)), out = {};
+  const row = k => out[k] = out[k] || { total: 0, wh: 0, down: 0, loan: 0 };
+  liveTz().filter(t => sc.has(t.holder) && activeTz(t)).forEach(t => { const r = row(t.sku); r.total++; t.holder === unitId ? r.wh++ : r.down++; if (t.loanId) r.loan++; });
+  Object.values(S.stock).filter(x => sc.has(x.holder) && x.qty > 0).forEach(x => { const r = row(x.sku); r.total += x.qty; x.holder === unitId ? r.wh += x.qty : r.down += x.qty; });
+  Object.values(S.loans).filter(l => l.status === 'active').forEach(l => (l.lines || []).forEach(li => { if (out[li.sku] && sc.has(rootNode().id)) out[li.sku].loan += li.qty; }));
+  return out;
+}
+const skuOrder = (a, b) => ((S.skus[a]?.kind === 'tz' ? 0 : 1) - (S.skus[b]?.kind === 'tz' ? 0 : 1)) || skuName(a).localeCompare(skuName(b), 'he');
+function renderDescriptor() {
+  const id = me(), cnt = descCounts(id), keys = Object.keys(cnt).sort(skuOrder);
+  const row = k => { const r = cnt[k]; return `<tr><td>${esc(skuName(k))}</td><td class="num"><b>${r.total}</b></td><td class="num">${r.wh || '<span class="muted">—</span>'}</td><td class="num">${r.down || '<span class="muted">—</span>'}</td><td class="num">${r.loan || '<span class="muted">—</span>'}</td></tr>`; };
+  const tzK = keys.filter(k => S.skus[k]?.kind === 'tz'), lK = keys.filter(k => S.skus[k]?.kind !== 'tz');
+  const head = `<thead><tr><th>פריט</th><th>סה״כ</th><th>במחסן</th><th>מוחתם מטה</th><th>מתוכם בהשאלה</th></tr></thead>`;
+  return `<div class="scope">כמה יש ל<b>${esc(nm(id))}</b> מכל סוג ציוד, כולל מה שמוחתם על היחידות ובעלי התפקיד שמתחתיה.</div>
+  <section class="block"><h2>מכשירים (צ׳)</h2>${tzK.length ? `<div class="tablewrap"><table>${head}<tbody>${tzK.map(row).join('')}</tbody></table></div>` : empty('אין פריטי צ׳', '')}</section>
+  <section class="block"><h2>לוג״ת</h2>${lK.length ? `<div class="tablewrap"><table>${head}<tbody>${lK.map(row).join('')}</tbody></table></div>` : empty('אין לוג״ת', '')}</section>`;
+}
+
+/* ---------- brigade descriptors ---------- */
+function renderDescs() {
+  const root = rootNode().id;
+  const levels = [root, ...kids(root).filter(k => k.level !== 'role' && kids(k.id).length).map(k => k.id)];
+  if (!levels.includes(ui.descsLevel)) ui.descsLevel = root;
+  const lv = ui.descsLevel;
+  const cols = kids(lv).filter(k => k.level !== 'role' || liveTz().some(t => t.holder === k.id) || holdings(k.id).length);
+  const totals = descCounts(lv);
+  const per = Object.fromEntries(cols.map(c => [c.id, descCounts(c.id)]));
+  const keys = Object.keys(totals).sort(skuOrder);
+  const cell = v => v ? `<td class="num">${v}</td>` : '<td class="num"><span class="muted">—</span></td>';
+  const section = (title, ks) => ks.length ? `<section class="block"><h2>${title}</h2><div class="tablewrap"><table><thead><tr><th>פריט</th>${cols.map(c => `<th>${esc(c.name)}</th>`).join('')}<th>מחסן ${esc(S.nodes[lv].name)}</th><th>סה״כ</th></tr></thead><tbody>${ks.map(k => `<tr><td>${esc(skuName(k))}</td>${cols.map(c => cell(per[c.id][k]?.total || 0)).join('')}${cell(totals[k].wh)}<td class="num"><b>${totals[k].total}</b></td></tr>`).join('')}</tbody></table></div></section>` : '';
+  return `<div class="scope">כמות הציוד מכל סוג בכל יחידה. בחר רמה כדי לפרק גדוד לפלוגות שלו.</div>
+  <div class="toolbar"><div class="field"><label for="descsLevel">רמת פירוט</label><select id="descsLevel" data-bind="descsLevel">${levels.map(l => `<option value="${esc(l)}" ${l === lv ? 'selected' : ''}>${l === root ? 'כל יחידות החטיבה' : esc(nm(l)) + ' לפי פלוגות'}</option>`).join('')}</select></div></div>
+  ${section('מכשירים (צ׳)', keys.filter(k => S.skus[k]?.kind === 'tz'))}
+  ${section('לוג״ת', keys.filter(k => S.skus[k]?.kind !== 'tz'))}
+  ${keys.length ? '' : empty('אין ציוד להצגה', '')}`;
+}
+
+/* ---------- loans from outside units ---------- */
+function loanSummary(l) {
+  const parts = (l.lines || []).map(x => `${esc(skuName(x.sku))} × ${x.qty}`);
+  const byS = {}; (l.tz || []).forEach(t => { const k = S.tz[t]?.sku; byS[k] = (byS[k] || 0) + 1; });
+  Object.entries(byS).forEach(([k, c]) => parts.push(`${esc(skuName(k))} × ${c}`));
+  return parts.join(' · ') || '—';
+}
+function loanDueState(l) {
+  if (l.status === 'returned') return ['הוחזר', ''];
+  const d = daysTo(l.due);
+  if (d < 0) return [`באיחור של ${-d} ימים`, 'crit'];
+  if (d <= 7) return [`להחזרה בעוד ${d} ימים`, 'warn'];
+  return [`להחזרה עד ${fmtD(l.due + 'T00:00:00')}`, 'good'];
+}
+function renderLoans() {
+  const root = rootNode(), n = root, f = ui.loan;
+  const allowed = MEM().filter(x => x.active && x.canReceive);
+  const cur = currentSigner(false), ok = cur && cur.s && cur.s.canReceive;
+  const active = Object.values(S.loans).filter(l => l.status === 'active').sort((a, b) => a.due.localeCompare(b.due));
+  const done = Object.values(S.loans).filter(l => l.status !== 'active').sort((a, b) => (b.returnedAt || '').localeCompare(a.returnedAt || ''));
+  const skus = Object.values(S.skus).filter(x => x.kind === f.kind).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  const card = l => {
+    const items = (l.tz || []).map(t => S.tz[t]).filter(Boolean);
+    return `<div class="item ${l.status === 'active' ? (daysTo(l.due) < 0 ? 'sev-crit' : daysTo(l.due) <= 7 ? 'sev-warn' : '') : ''}"><div class="head"><div><div class="title">מ${esc(l.from)}</div><div class="meta">התקבל ${fmtD(l.createdAt)}${l.createdBy ? ' · ' + esc(l.createdBy) : ''}${l.returnedAt ? ' · הוחזר ' + fmtD(l.returnedAt) : ''}</div></div>${pill(loanDueState(l))}</div>
+      <div class="small">${loanSummary(l)}</div>
+      ${items.length ? `<div class="tablewrap"><table><thead><tr><th>צ׳</th><th>שם מכשיר</th><th>נמצא אצל</th></tr></thead><tbody>${items.map(t => `<tr class="click" data-act="detail" data-v="${esc(t.id)}"><td>${tzNo(t.id)}</td><td>${esc(skuName(t.sku))}</td><td>${t.returned ? 'הוחזר' : esc(fullName(t.holder))}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      ${l.note ? `<div class="meta">הערה: ${esc(l.note)}</div>` : ''}
+      ${l.status === 'active' ? `<div class="actions"><button class="btn sm" data-act="returnLoan" data-v="${esc(l.id)}" ${ok ? '' : 'disabled'}>החזרת ההשאלה ליחידה המשאילה</button></div>` : ''}</div>`;
+  };
+  return `<div class="scope">ציוד שהחטיבה שאלה מיחידות מחוץ לחטיבה. הציוד נקלט למחסן החטיבה, יורד ליחידות כרגיל, ונשאר משויך ליחידה המשאילה עד שמחזירים אותו.</div>
+  ${signerBar()}
+  ${active.length ? `<section class="block"><h2>השאלות פעילות<small>${active.length}</small></h2><div class="list">${active.map(card).join('')}</div></section>` : empty('אין השאלות פעילות', 'השאלה חדשה נקלטת בטופס שלמטה.')}
+  <section class="block"><h2>קליטת השאלה חדשה<small>רק מורשה עם הרשאת קליטת אמצעים</small></h2><div class="card formgrid">
+    ${!allowed.length && !isOwner() ? '<div class="item sev-warn"><div class="small">לאף משתמש בחטיבה אין הרשאת קליטת אמצעים. מגדירים אותה בעמוד ההרשאות.</div></div>' : ok ? `<div class="small"><span class="pill good">מורשה קליטה</span> קולט: ${esc(cur.label)}</div>` : `<div class="item sev-warn"><div class="small">${cur ? `ל${esc(cur.label)} אין הרשאת קליטת אמצעים.` : 'אין לך הרשאת חתימה בחטיבה.'} מורשי קליטה: ${allowed.map(x => esc(memberLabel(x))).join(', ')}.</div></div>`}
+    <div class="toolbar"><div class="field"><label for="lFrom">יחידה משאילה</label><input type="text" id="lFrom" data-bind="loan.from" value="${esc(f.from)}" placeholder="למשל: חטיבה 7"></div>
+      <div class="field"><label for="lDue">תאריך החזרה</label><input type="date" id="lDue" data-bind="loan.due" value="${esc(f.due)}"></div></div>
+    <div class="seg" role="group" aria-label="סוג ציוד">${[['tz', 'צ׳'], ['logat', 'לוג״ת']].map(([k, l]) => `<button data-act="lkind" data-v="${k}" aria-pressed="${f.kind === k}">${l}</button>`).join('')}</div>
+    <div class="field"><label for="lSku">פריט</label><select id="lSku" data-bind="loan.sku"><option value="">בחר…</option>${skus.map(x => `<option value="${esc(x.id)}" ${f.sku === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}<option value="__new" ${f.sku === '__new' ? 'selected' : ''}>+ פריט חדש לקטלוג</option></select></div>
+    ${f.sku === '__new' ? `<div class="field"><label for="lNew">שם הפריט החדש</label><input type="text" id="lNew" data-bind="loan.newName" value="${esc(f.newName)}"></div>` : ''}
+    ${f.kind === 'logat' ? `<div class="field"><label for="lQty">כמות</label><input type="number" min="1" id="lQty" data-bind="loan.qty" value="${esc(f.qty)}"></div>` : `<div class="field"><label for="lTz">מספרי צ׳ (שורה לכל פריט, אפשר להוסיף מס׳ סידורי אחרי פסיק)</label><textarea id="lTz" data-bind="loan.tzList">${esc(f.tzList)}</textarea></div>`}
+    <div class="field"><label for="lNote">הערה (לא חובה)</label><input type="text" id="lNote" data-bind="loan.note" value="${esc(f.note)}"></div>
+    <div class="actions"><button class="btn primary" data-act="createLoan" ${ok ? '' : 'disabled'}>קליטת ההשאלה למחסן החטיבה</button></div>
+  </div></section>
+  ${done.length ? `<section class="block"><h2>השאלות שהוחזרו</h2><div class="list">${done.map(card).join('')}</div></section>` : ''}`;
+}
+
+/* ---------- permissions: users ---------- */
+function renderUnit() {
+  const id = me(), owner = S.nodes[id];
+  const scope = permScope();
+  const tid = permTarget(), n = S.nodes[tid], lv = n.level;
+  const roles = kids(tid).filter(k => k.level === 'role');
+  const spots = [tid, ...roles.map(r => r.id)];
+  const users = MEM().filter(m => spots.includes(m.unit)).sort((a, b) => (a.unit === tid ? 0 : 1) - (b.unit === tid ? 0 : 1) || (a.name || '').localeCompare(b.name || '', 'he'));
+  const count = u => { const sp = [u, ...kids(u).filter(k => k.level === 'role').map(k => k.id)]; const l = MEM().filter(m => m.active && sp.includes(m.unit)); return [l.length, l.filter(m => m.canSign && m.unit === u).length]; };
+  const adminOk = lv === 'brigade' || lv === 'battalion', recvOk = lv === 'brigade';
+  const a = ui.addM;
+  if (!spots.includes(a.unit)) a.unit = tid;
+  const flag = (m, f, on, off) => `<button class="btn sm ${m[f] ? 'good on' : ''}" data-act="mflag" data-v="${esc(m.email)}|${f}" aria-pressed="${!!m[f]}">${m[f] ? on : off}</button>`;
+  return `<div class="scope">עמוד ההרשאות של <b>${esc(owner.name)}</b>. כל משתמש נכנס עם חשבון ה־Google שלו, לפי כתובת המייל שהוגדרה כאן.</div>
+  <section class="block"><h2>יחידות בעמוד זה<small>לחיצה פותחת את המשתמשים של היחידה</small></h2>
+    <div class="tablewrap"><table><thead><tr><th>יחידה</th><th>משתמשים</th><th>מורשי חתימה</th><th></th></tr></thead><tbody>${scope.map(u => { const [c, sg] = count(u); return `<tr class="click" data-act="permSel" data-v="${esc(u)}"><td>${u === tid ? '<b>' + esc(nm(u)) + '</b>' : esc(nm(u))}</td><td class="num">${c}</td><td>${sg ? `<span class="pill good">${sg}</span>` : '<span class="pill crit">אין</span>'}</td><td>${u === tid ? '<span class="pill acc">נבחרה</span>' : '<span class="small muted">פתיחה</span>'}</td></tr>`; }).join('')}</tbody></table></div></section>
+  <section class="block"><h2>משתמשים · ${esc(nm(tid))}<small>${users.length} משתמשים</small></h2>
+    ${users.length ? `<div class="list">${users.map(m => `<div class="item ${m.active ? '' : 'sev-warn'}"><div class="head"><div><div class="title">${esc(m.name || m.email)}${m.roleTitle ? ' · ' + esc(m.roleTitle) : ''}</div><div class="meta"><span dir="ltr">${esc(m.email)}</span>${m.pn ? ' · מ״א ' + esc(m.pn) : ''}${m.unit !== tid ? ' · בעל תפקיד: ' + esc(nm(m.unit)) : ''}</div></div>${m.active ? '' : '<span class="pill warn">מושבת</span>'}</div>
+      <div class="actions">${flag(m, 'canSign', 'מורשה חתימה', 'ללא הרשאת חתימה')}${adminOk && m.unit === tid ? flag(m, 'isAdmin', 'מנהל הרשאות', 'לא מנהל הרשאות') : ''}${recvOk && m.unit === tid && isBrigadeAdmin() ? flag(m, 'canReceive', 'קליטת אמצעים', 'ללא הרשאת קליטה') : ''}
+        <button class="btn sm" data-act="mflag" data-v="${esc(m.email)}|active">${m.active ? 'השבתה' : 'הפעלה מחדש'}</button><button class="btn sm crit" data-act="delMember" data-v="${esc(m.email)}">הסרה</button></div></div>`).join('')}</div>` : empty('אין עדיין משתמשים ביחידה', 'מוסיפים משתמש לפי כתובת ה־Google שלו. מורשה חתימה יכול לקבל, לנפק ולאשר ציוד בשם היחידה.')}
+    <div class="card formgrid"><b>הוספת משתמש ל${esc(n.name)}</b><div class="toolbar">
+      <div class="field"><label for="mEmail">מייל (חשבון Google)</label><input type="text" id="mEmail" dir="ltr" inputmode="email" autocomplete="off" data-bind="addM.email" value="${esc(a.email)}" placeholder="name@gmail.com"></div>
+      <div class="field"><label for="mName">שם</label><input type="text" id="mName" data-bind="addM.name" value="${esc(a.name)}"></div>
+      <div class="field"><label for="mRole">תפקיד</label><input type="text" id="mRole" data-bind="addM.roleTitle" value="${esc(a.roleTitle)}" placeholder="למשל: רס״פ"></div>
+      <div class="field"><label for="mPn">מספר אישי (לא חובה)</label><input type="text" id="mPn" inputmode="numeric" data-bind="addM.pn" value="${esc(a.pn)}"></div>
+    </div>
+    ${roles.length ? `<div class="field"><label for="mUnit">משויך ל</label><select id="mUnit" data-bind="addM.unit">${spots.map(u => `<option value="${esc(u)}" ${a.unit === u ? 'selected' : ''}>${u === tid ? esc(n.name) + ' (היחידה)' : 'בעל תפקיד: ' + esc(nm(u))}</option>`).join('')}</select></div>` : ''}
+    <div class="actions" style="align-items:center">
+      <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="mSign" data-bind="addM.canSign" ${a.canSign ? 'checked' : ''}> מורשה חתימה</label>
+      ${adminOk && a.unit === tid ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="mAdmin" data-bind="addM.isAdmin" ${a.isAdmin ? 'checked' : ''}> מנהל הרשאות</label>` : ''}
+      ${recvOk && a.unit === tid && isBrigadeAdmin() ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="mRecv" data-bind="addM.canReceive" ${a.canReceive ? 'checked' : ''}> קליטת אמצעים מבחוץ</label>` : ''}
+    </div>
+    <div class="actions"><button class="btn primary" data-act="addMember">הוספת המשתמש</button></div></div>
+  </section>
+  <section class="block"><h2>בעלי תפקיד · ${esc(nm(tid))}<small>אנשים שהציוד נחתם עליהם אישית</small></h2>
+    ${roles.length ? `<div class="list">${roles.map(r => `<div class="item"><div class="title">${esc(nm(r.id))}</div></div>`).join('')}</div>` : ''}
+    <div class="card formgrid"><div class="toolbar">
+      <div class="field"><label for="rlName">תפקיד</label><input type="text" id="rlName" data-bind="addR.name" value="${esc(ui.addR.name)}" placeholder="למשל: קשר פלוגתי"></div>
+      <div class="field"><label for="rlPerson">שם</label><input type="text" id="rlPerson" data-bind="addR.person" value="${esc(ui.addR.person)}"></div>
+    </div><div class="actions"><button class="btn" data-act="addRole">הוספת בעל תפקיד</button></div></div></section>`;
+}
+
+/* ---------- incidents ---------- */
+function renderIncidents() {
+  const sc = new Set(desc(me()));
+  const list = Object.values(S.incidents).filter(i => sc.has(i.holder)).sort((a, b) => {
+    const o = s => (s === 'open' ? 0 : s === 'investigating' ? 1 : 2);
+    return o(a.status) - o(b.status) || (b.createdAt || '').localeCompare(a.createdAt || '');
+  });
+  if (!list.length) return empty('אין אירועים חריגים בתחום', 'אירוע נפתח אוטומטית כשפריט צ׳ מסומן "לא נמצא", או ידנית כשאישור שבועי לא התקבל.');
+  return `<div class="list">${list.map(i => {
+    const closed = i.status === 'found' || i.status === 'lost' && false;
+    const sev = i.status === 'open' ? 'sev-crit' : i.status === 'investigating' ? 'sev-warn' : '';
+    return `<div class="item ${sev}"><div class="head"><div><div class="title">${esc(INCTYPE[i.type] || i.type)}</div>
+      <div class="meta">${esc(fullName(i.holder))} · נפתח ${fmtDT(i.createdAt)}</div></div>${pill(INC[i.status])}</div>
+      ${i.tz ? `<div class="small">${tzNo(i.tz)} ${esc(skuName(S.tz[i.tz]?.sku))} <button class="linkbtn" data-act="detail" data-v="${esc(i.tz)}">כרטיס פריט</button></div>` : ''}
+      ${i.note ? `<div class="meta">הערה: ${esc(i.note)}</div>` : ''}
+      <div class="toolbar"><div class="field" style="flex:0 1 200px"><label for="inc_${esc(i.id)}">סטטוס</label><select id="inc_${esc(i.id)}" data-act-change="incStatus" data-v="${esc(i.id)}">${Object.entries(INC).map(([k, [l]]) => `<option value="${k}" ${i.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
+    </div>`; }).join('')}</div>`;
+}
+
+/* ---------- main render ---------- */
+function render() {
+  const main = document.getElementById('main');
+  if (authState !== 'in') { renderGate(); return; }
+  if (loaded.size < COLS.length) { gate('<div class="skeleton">טוען את נתוני המלאי…</div>'); return; }
+  const root = rootNode();
+  if (!root) { gate(isOwner() ? importView() : empty('עדיין אין יחידות במערכת', 'בעל המערכת צריך לבצע ייבוא ראשוני של מבנה החטיבה.')); return; }
+  if (!isOwner() && (!ME.member || !ME.member.active || !S.nodes[ME.member.unit])) { authState = 'nomember'; renderGate(); return; }
+  const scopeIds = desc(viewRoot());
+  if (!scopeIds.includes(ui.acting)) ui.acting = ME.member && scopeIds.includes(ME.member.unit) ? ME.member.unit : scopeIds[0];
+  renderHeader();
+  const a = document.activeElement, fid = a && a.id, s0 = a && a.selectionStart, s1 = a && a.selectionEnd;
+  const views = { overview: renderOverview, free: renderFree, moves: renderMoves, tzrep: renderTzReport, desc: renderDescriptor, loans: renderLoans, descs: renderDescs, unit: renderUnit, kits: renderKits };
+  main.innerHTML = `<h1 class="ptitle">${esc(ui.pageTitle || '')}</h1>` + (views[ui.tab] || renderOverview)();
+  renderSheet();
+  if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); try { if (s0 != null) el.setSelectionRange(s0, s1); } catch (e) {} } }
+}
+
+/* ---------- actions ---------- */
+const H = {
+  menu: () => { menuOpen = true; renderDrawer(); },
+  menuClose: () => { menuOpen = false; renderDrawer(); },
+  tab: v => { menuOpen = false; ui.tab = v; try { localStorage.setItem('inv.tab', v); } catch (e) {} render(); window.scrollTo(0, 0); },
+  goto: v => { if (!desc(viewRoot()).includes(v)) return; ui.acting = v; ui.permUnit = null; ui.repUnit = null; ui.repF = 'all'; draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {} }; try { localStorage.setItem('inv.acting', v); } catch (e) {} render(); window.scrollTo(0, 0); },
+  kind: v => { ui.stockKind = v; render(); },
+  permSel: v => { ui.permUnit = v; ui.addM.unit = v; render(); },
+  gotoPerm: v => { const owner = permOwner(v); H.goto(owner); ui.permUnit = v; H.tab('unit'); },
+  detail: v => { ui.detail = v; renderSheet(); },
+  closeSheet: (v, el, e) => { if (v === 'bg' && e.target !== el) return; ui.detail = null; ui.report = null; renderSheet(); },
+  dtype: v => { draft.type = v; draft.target = ''; render(); },
+  addLine: () => { draft.lines.push({ sku: '', qty: '' }); render(); },
+  delLine: v => { draft.lines.splice(+v, 1); render(); },
+  dtz: v => { const i = draft.tz.indexOf(v); if (i < 0) draft.tz.push(v); else { draft.tz.splice(i, 1); delete draft.kit[v]; } render(); },
+  kitInc: v => { const [k, cid] = v.split('|'); const it = (draft.kit[k] || []).find(c => c.id === cid); if (it) it.inc = !it.inc; render(); },
+  recvInc: v => { const [mid, k, i] = v.split('|'); const m = S.moves[mid]; if (!m) return; const st = recvState(m, k); if (st[+i]) st[+i].got = !st[+i].got; renderSheet(); },
+  openReport: v => { ui.report = v; renderSheet(); },
+  addKit: () => run(async () => {
+    const sku = ui.newKit.sku; if (!sku) fail('בחר פריט ראשי לקיט.'); if (kitFor(sku)) fail('לפריט הזה כבר יש קיט.');
+    await put('kits', uid('k'), { name: ui.newKit.name.trim() || 'קיט ' + skuName(sku), sku, items: [] });
+    ui.newKit = { sku: '', name: '' };
+  }, 'הקיט נוצר. הוסף לו אמצעים.'),
+  addComp: v => run(async () => {
+    const a = ui.kitAdd[v] || {}, name = (a.name || '').trim(), q = parseInt(a.qty || '1', 10);
+    if (!name) fail('הזן שם לאמצעי.'); if (!(q > 0)) fail('כמות צריכה להיות 1 ומעלה.');
+    await patch('kits', v, { items: [...(S.kits[v].items || []), { id: uid('c'), name, qty: q }] });
+    ui.kitAdd[v] = {};
+  }, 'האמצעי נוסף לקיט.'),
+  delComp: v => run(async () => { const [k, c] = v.split('|'); await patch('kits', k, { items: (S.kits[k].items || []).filter(x => x.id !== c) }); }, 'האמצעי הוסר מהקיט.'),
+  delKit: v => run(async () => { await col('kits').doc(v).delete(); }, 'הקיט נמחק.'),
+  rkind: v => { rcv.kind = v; rcv.sku = ''; render(); },
+  lkind: v => { ui.loan.kind = v; ui.loan.sku = ''; render(); },
+  createLoan: () => run(async () => {
+    const root = rootNode().id; if (me() !== root) fail('רק החטיבה קולטת השאלות מיחידות.');
+    const sg = currentSigner(); if (!sg.s || !sg.s.canReceive) fail('רק מורשה עם הרשאת קליטת אמצעים יכול לקלוט השאלה.');
+    const f = ui.loan, from = f.from.trim();
+    if (!from) fail('הזן מאיזו יחידה הושאל הציוד.'); if (!f.due) fail('בחר תאריך החזרה.'); if (f.due < TODAY) fail('תאריך ההחזרה עבר.');
+    let sku = f.sku; if (!sku) fail('בחר פריט.');
+    if (sku === '__new') { const name = f.newName.trim(); if (!name) fail('הזן שם לפריט החדש.'); sku = (f.kind === 'tz' ? 'T-' : 'L-') + Date.now().toString(36); await put('skus', sku, { name, kind: f.kind, uom: 'יח׳' }); }
+    const lid = uid('l'); let lines = [], tzIds = [];
+    if (f.kind === 'logat') { const q = parseInt(f.qty, 10); if (!(q > 0)) fail('הזן כמות חיובית.'); lines = [{ sku, qty: q }]; await addQty(root, sku, q); }
+    else {
+      const rows = f.tzList.split('\n').map(r => r.trim()).filter(Boolean).map(r => { const [a, b] = r.split(','); return { n: (a || '').replace(/[^0-9A-Za-z-]/g, ''), s: (b || '').trim() }; });
+      if (!rows.length) fail('הזן לפחות מספר צ׳ אחד.');
+      for (const r of rows) { if (!r.n) fail('מספר צ׳ יכול להכיל רק ספרות, אותיות לועזיות ומקף.'); if (S.tz[r.n] && !S.tz[r.n].returned) fail(`צ׳ ${r.n} כבר קיים במערכת.`); }
+      for (const r of rows) { const d = { sku, serial: r.s, holder: root, status: 'ok', since: now(), pending: null, periods: [], loanId: lid }; const kd = kitFor(sku); if (kd) d.kit = { items: (kd.items || []).map(c => ({ id: c.id, name: c.name, qty: c.qty, have: true })), at: now() }; await put('tz', r.n, d); }
+      tzIds = rows.map(r => r.n);
+    }
+    await put('loans', lid, { from, due: f.due, note: f.note.trim(), lines, tz: tzIds, status: 'active', createdAt: now(), createdBy: sg.label });
+    await put('moves', uid('m'), { type: 'loan', from: null, fromExt: from, to: root, lines, tz: tzIds, status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: 'להחזרה עד ' + fmtD(f.due + 'T00:00:00') });
+    ui.loan = { from: '', due: '', kind: f.kind, sku: '', qty: '', tzList: '', newName: '', note: '' };
+  }, 'ההשאלה נקלטה למחסן החטיבה.'),
+  returnLoan: v => run(async () => {
+    const L = S.loans[v], root = rootNode().id; if (!L || L.status !== 'active') fail('ההשאלה כבר טופלה.');
+    const sg = currentSigner(); if (!sg.s || !sg.s.canReceive) fail('רק מורשה עם הרשאת קליטת אמצעים יכול להחזיר השאלה.');
+    for (const id of L.tz || []) { const t = S.tz[id]; if (!t || t.returned) continue; if (t.holder !== root || t.pending) fail(`צ׳ ${id} נמצא אצל ${nm(t.holder)}. צריך לזכות אותו לחטיבה לפני החזרת ההשאלה.`); }
+    for (const l of L.lines || []) if (avail(root, l.sku) < l.qty) fail(`אין מספיק ${skuName(l.sku)} במחסן החטיבה להחזרה (${avail(root, l.sku)} מתוך ${l.qty}).`);
+    for (const id of L.tz || []) if (S.tz[id] && !S.tz[id].returned) await patch('tz', id, { returned: true, returnedAt: now() });
+    for (const l of L.lines || []) await addQty(root, l.sku, -l.qty);
+    await put('moves', uid('m'), { type: 'loanret', from: root, to: null, toExt: L.from, lines: L.lines || [], tz: L.tz || [], status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' });
+    await patch('loans', v, { status: 'returned', returnedAt: now(), returnedBy: sg.label });
+  }, 'ההשאלה הוחזרה ליחידה המשאילה.'),
+  submitMove: () => run(async () => {
+    const from = me();
+    if (!draft.target) fail('בחר למי נמסר הציוד.');
+    const merged = {};
+    for (const l of draft.lines) { if (!l.sku && !l.qty) continue; const q = parseInt(l.qty, 10); if (!l.sku || !(q > 0)) fail('בכל שורת לוג״ת צריך לבחור פריט ולהזין כמות חיובית.'); merged[l.sku] = (merged[l.sku] || 0) + q; }
+    const lines = Object.entries(merged).map(([sku, qty]) => ({ sku, qty }));
+    for (const l of lines) if (l.qty > avail(from, l.sku)) fail(`הכמות של ${skuName(l.sku)} גדולה מהזמין (${avail(from, l.sku)}).`);
+    const tz = draft.tz.filter(t => S.tz[t] && S.tz[t].holder === from && !S.tz[t].pending);
+    if (!lines.length && !tz.length) fail('לא נבחר ציוד. הוסף פריט לוג״ת או סמן פריטי צ׳.');
+    const sg = currentSigner();
+    const id = uid('m');
+    const isT = draft.type === 'transfer';
+    const kit = {};
+    for (const t of tz) { const d = kitDraft(t, S.tz[t].sku, S.tz[t].kit && S.tz[t].kit.items); if (d) kit[t] = d.map(c => ({ id: c.id, name: c.name, qty: c.qty, inc: !!c.inc })); }
+    for (const l of lines) { const d = kitDraft('L:' + l.sku, l.sku, null); if (d) kit['L:' + l.sku] = d.map(c => ({ id: c.id, name: c.name, qty: c.qty * l.qty, inc: !!c.inc })); }
+    await put('moves', id, { type: draft.type, from, to: draft.target, approver: isT ? S.nodes[from].parent : null, lines, tz, kit, status: isT ? 'awaiting' : 'pending', createdAt: now(), createdBy: sg.label, note: draft.note.trim() });
+    for (const t of tz) await patch('tz', t, { pending: id });
+    draft = { type: draft.type, target: '', lines: [], tz: [], note: '', kit: {} };
+  }, 'נשלח. הציוד יעבור אחרי חתימת המקבל.'),
+  sign: v => run(async () => {
+    const m = S.moves[v]; if (!m || m.status !== 'pending') fail('התנועה כבר טופלה.');
+    const sg = currentSigner();
+    const kitRecv = {}; let short = []; 
+    for (const key of Object.keys(m.kit || {})) { const st = recvState(m, key); kitRecv[key] = st.map(c => ({ id: c.id, name: c.name, qty: c.qty, inc: !!c.inc, got: !!c.got })); st.forEach(c => { if (c.inc && !c.got) short.push(`${key.startsWith('L:') ? skuName(key.slice(2)) : 'צ׳ ' + key}: ${c.name}`); }); }
+    for (const l of m.lines || []) { await addQty(m.from, l.sku, -l.qty); }
+    for (const l of m.lines || []) { await addQty(m.to, l.sku, l.qty); }
+    for (const t of m.tz || []) {
+      const upd = { holder: m.to, since: now(), pending: null };
+      if (kitRecv[t]) upd.kit = { items: kitRecv[t].map(c => ({ id: c.id, name: c.name, qty: c.qty, have: c.got })), at: now() };
+      await patch('tz', t, upd);
+    }
+    await patch('moves', v, { status: 'signed', signedAt: now(), signedBy: sg.label, kitRecv, kitShort: short.length });
+    if (short.length) await put('incidents', uid('i'), { type: 'kit', tz: (m.tz || []).find(t => kitRecv[t] && kitRecv[t].some(c => c.inc && !c.got)) || null, holder: m.to, status: 'open', note: 'חסרו בקבלה: ' + short.join(', '), createdAt: now() });
+    ui.report = null; delete ui.recv[v];
+    toast(short.length ? `נחתם עם ${short.length} חוסרים בקיט. נפתח אירוע חריג.` : 'נחתם. הציוד רשום עכשיו על ' + nm(m.to) + '.');
+  }, null),
+  approve: v => run(async () => { const sg = currentSigner(); await patch('moves', v, { status: 'pending', approvedAt: now(), approvedBy: sg.label }); }, 'ההעברה אושרה ונשלחה לחתימת המקבל.'),
+  reject: v => run(async () => { const sg = currentSigner(); const m = S.moves[v]; for (const t of m.tz || []) await patch('tz', t, { pending: null }); await patch('moves', v, { status: 'rejected', signedAt: now(), signedBy: sg.label }); ui.report = null; }, 'התנועה נדחתה. הציוד נשאר אצל השולח.'),
+  cancel: v => run(async () => { const m = S.moves[v]; for (const t of m.tz || []) await patch('tz', t, { pending: null }); await patch('moves', v, { status: 'cancelled' }); }, 'התנועה בוטלה.'),
+  receive: () => run(async () => {
+    const to = me(); let sku = rcv.sku;
+    if (S.nodes[to].parent) fail('רק החטיבה יכולה לקלוט ציוד מבחוץ.');
+    const sg = currentSigner();
+    if (!sg.s || !sg.s.canReceive) fail('רק מורשה עם הרשאת קליטת אמצעים יכול לקלוט ציוד מבחוץ.');
+    if (!sku) fail('בחר פריט מהקטלוג.');
+    if (sku === '__new') { const name = rcv.newName.trim(); if (!name) fail('הזן שם לפריט החדש.'); sku = (rcv.kind === 'tz' ? 'T-' : 'L-') + Date.now().toString(36); await put('skus', sku, { name, kind: rcv.kind, uom: 'יח׳' }); }
+    const id = uid('m');
+    if (rcv.kind === 'logat') {
+      const q = parseInt(rcv.qty, 10); if (!(q > 0)) fail('הזן כמות חיובית.');
+      await addQty(to, sku, q);
+      await put('moves', id, { type: 'receive', from: null, to, lines: [{ sku, qty: q }], tz: [], status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' });
+    } else {
+      const rows = rcv.tzList.split('\n').map(r => r.trim()).filter(Boolean).map(r => { const [n, s] = r.split(','); return { n: (n || '').replace(/[^0-9A-Za-z-]/g, ''), s: (s || '').trim() }; });
+      if (!rows.length) fail('הזן לפחות מספר צ׳ אחד.');
+      for (const r of rows) { if (!r.n) fail('מספר צ׳ יכול להכיל רק ספרות, אותיות לועזיות ומקף.'); if (S.tz[r.n]) fail(`צ׳ ${r.n} כבר קיים במערכת.`); }
+      for (const r of rows) { const d = { sku, serial: r.s, holder: to, status: 'ok', since: now(), pending: null, periods: [] }; const kd = kitFor(sku); if (kd) d.kit = { items: (kd.items || []).map(c => ({ id: c.id, name: c.name, qty: c.qty, have: true })), at: now() }; await put('tz', r.n, d); }
+      await put('moves', id, { type: 'receive', from: null, to, lines: [], tz: rows.map(r => r.n), status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' });
+    }
+    rcv.qty = ''; rcv.tzList = ''; rcv.newName = ''; rcv.sku = '';
+  }, 'הציוד נקלט למחסן החטיבה.'),
+  ans: v => run(async () => {
+    const [tid, k] = v.split('|'); const t = S.tz[tid]; const note = (ui.notes[tid] || '').trim();
+    if (k === 'repair' && !note) fail('פרט איפה הפריט נמצא.');
+    const sg = currentSigner();
+    await put('confirms', WEEK + '__' + tid, { tz: tid, week: WEEK, holder: t.holder, answer: k, note, at: now(), by: sg.label });
+    if (k === 'missing') {
+      const has = Object.values(S.incidents).some(i => i.tz === tid && (i.status === 'open' || i.status === 'investigating'));
+      if (!has) await put('incidents', uid('i'), { type: 'missing', tz: tid, holder: t.holder, status: 'open', note, createdAt: now() });
+    }
+    ui.noteFor = null; delete ui.notes[tid];
+  }, v.endsWith('missing') ? 'דווח. נפתח אירוע חריג והדרג הממונה עודכן.' : 'האישור נשמר.'),
+  ansNote: v => { ui.noteFor = v; render(); const el = document.getElementById('note_' + v.split('|')[0]); if (el) el.focus(); },
+  noteCancel: () => { ui.noteFor = null; render(); },
+  allHere: () => run(async () => {
+    const sg = currentSigner();
+    const list = liveTz().filter(t => t.holder === me() && activeTz(t) && !confirmOf(t));
+    for (const t of list) await put('confirms', WEEK + '__' + t.id, { tz: t.id, week: WEEK, holder: t.holder, answer: 'here', note: '', at: now(), by: sg.label });
+  }, 'כל הפריטים אושרו לשבוע הזה.'),
+  addPeriod: v => run(async () => {
+    const t = S.tz[v], d = ui.perDraft[v] || {}, ps = t.periods || [];
+    if (ps.length >= 2) fail('אפשר להגדיר עד שתי תקופות הצפנה לפריט.');
+    if (!d.from || !d.to) fail('בחר תאריך התחלה ותאריך סיום.');
+    if (d.to < d.from) fail('תאריך הסיום לפני תאריך ההתחלה.');
+    if (ps.some(p => !(d.to < p.from || d.from > p.to))) fail('התקופה חופפת לתקופה קיימת.');
+    const list = [...ps, { id: uid('p'), name: (d.name || '').trim(), from: d.from, to: d.to }].sort((a, b) => a.from.localeCompare(b.from));
+    await patch('tz', v, { periods: list });
+    ui.perDraft[v] = { name: '', from: '', to: '' };
+  }, 'תקופת ההצפנה נשמרה.'),
+  delPeriod: v => run(async () => { const [tid, pid] = v.split('|'); await patch('tz', tid, { periods: (S.tz[tid].periods || []).filter(p => p.id !== pid) }); }, 'התקופה הוסרה.'),
+  addMember: () => run(async () => {
+    const a = ui.addM, email = String(a.email || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fail('כתובת המייל לא תקינה.');
+    if (!String(a.name || '').trim()) fail('הזן שם.');
+    if (a.pn && !/^\d{5,9}$/.test(String(a.pn).trim())) fail('מספר אישי צריך להכיל 5 עד 9 ספרות.');
+    const ex = S.members[email]; if (ex && ex.active) fail(`${email} כבר משויך ל${nm(ex.unit)}. הסר אותו שם קודם.`);
+    const tid = permTarget(), unit = a.unit && S.nodes[a.unit] ? a.unit : tid, lv = levelOf(unit);
+    const recv = !!a.canReceive && lv === 'brigade' && isBrigadeAdmin();
+    await put('members', email, { email, name: String(a.name).trim(), roleTitle: String(a.roleTitle || '').trim(), pn: String(a.pn || '').trim(), unit, level: lv, top: topOf(unit), canSign: !!a.canSign || recv, isAdmin: !!a.isAdmin && (lv === 'brigade' || lv === 'battalion'), canReceive: recv, active: true, addedBy: ME.email, addedAt: now() });
+    ui.addM = { email: '', name: '', roleTitle: '', pn: '', unit: tid, canSign: true, isAdmin: false, canReceive: false };
+  }, 'המשתמש נוסף. מעכשיו הוא יכול להיכנס עם חשבון ה־Google שלו.'),
+  mflag: v => run(async () => {
+    const [e, f] = v.split('|'), m = S.members[e]; if (!m) return;
+    if (e === ME.email && (f === 'isAdmin' || f === 'active') && m[f] && !isOwner()) fail('אי אפשר להסיר את ההרשאה הזו מעצמך. בקש ממנהל הרשאות אחר.');
+    const upd = { [f]: !m[f] }; if (f === 'canReceive' && !m.canReceive) upd.canSign = true; if (f === 'canSign' && m.canSign) upd.canReceive = false;
+    await patch('members', e, upd);
+  }, 'ההרשאה עודכנה.'),
+  delMember: v => run(async () => { if (v === ME.email && !isOwner()) fail('אי אפשר להסיר את עצמך.'); await col('members').doc(v).delete(); }, 'המשתמש הוסר.'),
+  addRole: () => run(async () => {
+    const a = ui.addR; if (!a.name.trim()) fail('הזן את שם התפקיד.');
+    await put('nodes', uid('r'), { name: a.name.trim(), person: a.person.trim(), level: 'role', parent: permTarget(), top: topOf(permTarget()), order: 0 });
+    ui.addR = { name: '', person: '' };
+  }, 'בעל התפקיד נוסף.'),
+  openUnc: v => run(async () => {
+    const list = liveTz().filter(t => t.holder === v && activeTz(t) && !confirmOf(t));
+    await put('incidents', 'unc__' + WEEK + '__' + v, { type: 'unconfirmed', tz: list.length === 1 ? list[0].id : null, holder: v, status: 'open', note: `${list.length} פריטים לא אושרו: ${list.map(t => t.id).join(', ')}`, createdAt: now() });
+  }, 'נפתח אירוע חריג.'),
+};
+const HC = {
+  tzStatus: (v, val) => run(async () => { await patch('tz', v, { status: val }); }, 'מצב הפריט עודכן.'),
+  incStatus: (v, val) => run(async () => {
+    const i = S.incidents[v]; await patch('incidents', v, { status: val, updatedAt: now() });
+    if (val === 'lost' && i.tz) await patch('tz', i.tz, { status: 'lost' });
+  }, 'סטטוס האירוע עודכן.'),
+};
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  if (b.tagName === 'INPUT' && b.type === 'checkbox') { H[b.dataset.act]?.(b.dataset.v, b, e); return; }
+  if (b.tagName === 'SELECT') return;
+  if (b.tagName === 'BUTTON') e.preventDefault();
+  H[b.dataset.act]?.(b.dataset.v, b, e);
+});
+function bind(el, rerender) {
+  const p = el.dataset.bind; if (!p) return false;
+  const val = el.type === 'checkbox' ? el.checked : el.value;
+  const [a, b, c] = p.split('.');
+  if (a === 'draft') draft[b] = val;
+  else if (a === 'rcv') rcv[b] = val;
+  else if (a === 'line') { draft.lines[+b][c] = val; }
+  else if (a === 'note') ui.notes[b] = val;
+  else if (a === 'signer') ui.signer[me()] = val;
+  else if (a === 'addS' || a === 'addR' || a === 'addP' || a === 'newKit' || a === 'addM') ui[a][b] = val;
+  else if (a === 'loan') ui.loan[b] = val;
+  else if (a === 'per') { ui.perDraft[b] = ui.perDraft[b] || {}; ui.perDraft[b][c] = val; }
+  else if (a === 'kitAdd') { ui.kitAdd[b] = ui.kitAdd[b] || {}; ui.kitAdd[b][c] = val; }
+  else ui[a] = val;
+  if (rerender) render();
+  return true;
+}
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (['freeQ', 'repQ'].includes(el.dataset.bind)) { bind(el, true); return; }
+  if (el.tagName !== 'SELECT' && el.type !== 'checkbox') bind(el, false);
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'acting') { menuOpen = false; H.goto(el.value); return; }
+  if (el.dataset.actChange) { HC[el.dataset.actChange](el.dataset.v, el.value); return; }
+  if (el.tagName === 'SELECT' || el.type === 'checkbox') bind(el, true);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && menuOpen) { menuOpen = false; renderDrawer(); return; } if (e.key === 'Escape' && (ui.detail || ui.report)) { ui.detail = null; ui.report = null; renderSheet(); } });
+
+/* ---------- sign-in & boot ---------- */
+const CFG = window.APP_CONFIG || {};
+let authState = 'pending', fauth = null, unsubs = [];
+const ME = { email: '', name: '', owner: false, member: null };
+function gate(html) {
+  document.getElementById('top').innerHTML = `<div class="brandx"><span class="markx">${ICO.stock}</span><div style="min-width:0"><div class="b1">${esc(CFG.appName || 'מלאי חטיבתי')}</div><div class="b2">${esc(ME.email || '')}</div></div></div>${authState === 'in' || authState === 'nomember' ? '<button class="btn sm" data-act="logout">יציאה</button>' : ''}`;
+  document.getElementById('drawer').innerHTML = '';
+  document.getElementById('main').innerHTML = html;
+}
+function renderGate() {
+  if (authState === 'nocfg') return gate(empty('צריך לחבר את Firebase', 'ממלאים את הקובץ config.js לפי מדריך ההתקנה ומעלים אותו מחדש.'));
+  if (authState === 'pending') return gate('<div class="skeleton">טוען…</div>');
+  if (authState === 'out') return gate(`<section class="block" style="max-width:440px;margin:24px auto 0;width:100%"><h1 class="ptitle">כניסה למערכת המלאי</h1>
+    <div class="card formgrid"><button class="btn primary" style="justify-content:center;padding:12px" data-act="login">כניסה עם Google</button>
+    <div class="small muted">הכניסה פתוחה רק למי שמנהל ההרשאות הוסיף לפי כתובת המייל שלו. אם הכניסה לא נפתחת, פתחו את הקישור ישירות בדפדפן (Chrome או Safari) ולא מתוך אפליקציה אחרת.</div></div></section>`);
+  if (authState === 'nomember') return gate(`<section class="block" style="max-width:520px;margin:24px auto 0;width:100%"><h1 class="ptitle">החשבון עוד לא שויך ליחידה</h1>
+    <div class="card formgrid"><div>נכנסת בתור <b dir="ltr">${esc(ME.email)}</b>.</div><div class="small muted">בקש ממנהל ההרשאות ביחידה שלך להוסיף את המייל הזה בעמוד ההרשאות. אחרי שהוא מוסיף, רענן את הדף.</div>
+    <div class="actions"><button class="btn primary" data-act="reload">רענון</button><button class="btn" data-act="logout">כניסה עם חשבון אחר</button></div></div></section>`);
+}
+function importView() {
+  const D = window.SEED_DATA;
+  if (!D) return empty('קובץ seed.js חסר', 'מעלים את seed.js יחד עם שאר הקבצים.');
+  const n = o => Object.keys(o || {}).length;
+  return `<section class="block" style="max-width:620px;margin:24px auto 0;width:100%"><h1 class="ptitle">הקמה ראשונית</h1>
+    <div class="card formgrid"><div>המסד ריק. בחר מה לייבא:</div>
+    <div class="item"><div class="title">מבנה החטיבה בלבד</div><div class="small muted">${n(D.structure.nodes)} יחידות ובעלי תפקיד, ${n(D.structure.skus)} סוגי ציוד ו־${n(D.structure.kits)} קיטים. בלי ציוד. מתאים להתחלת עבודה אמיתית.</div><div class="actions"><button class="btn primary" data-act="importSeed" data-v="0">ייבוא המבנה</button></div></div>
+    <div class="item"><div class="title">מבנה ונתוני דמו</div><div class="small muted">כמו באב־הטיפוס: ${n(D.demo.tz)} פריטי צ׳, מלאי לוג״ת, קבלות, אישורים והשאלה לדוגמה. מתאים להדגמה.</div><div class="actions"><button class="btn" data-act="importSeed" data-v="1">ייבוא עם נתוני דמו</button></div></div>
+    <div class="small muted">אחרי הייבוא נכנסים לעמוד ההרשאות ומוסיפים את המשתמשים.</div></div></section>`;
+}
+async function importSeed(withDemo) {
+  const D = window.SEED_DATA; if (!D) fail('קובץ seed.js חסר.');
+  const list = [];
+  const addAll = grp => Object.entries(grp).forEach(([c, docs]) => Object.entries(docs).forEach(([id, d]) => list.push([c, id, d])));
+  addAll(D.structure); if (withDemo) addAll(D.demo);
+  for (let i = 0; i < list.length; i += 400) { const b = db.batch(); list.slice(i, i + 400).forEach(([c, id, d]) => b.set(db.collection(c).doc(id), d)); await b.commit(); }
+}
+Object.assign(H, {
+  login: async () => {
+    const pr = new firebase.auth.GoogleAuthProvider(); pr.setCustomParameters({ prompt: 'select_account' });
+    try { await fauth.signInWithPopup(pr); }
+    catch (e) {
+      if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment', 'auth/cancelled-popup-request'].includes(e.code)) { try { await fauth.signInWithRedirect(pr); } catch (e2) { toast('הכניסה לא הצליחה (' + (e2.code || '') + ')'); } }
+      else if (e.code !== 'auth/popup-closed-by-user') toast('הכניסה לא הצליחה (' + (e.code || '') + ')');
+    }
+  },
+  logout: async () => { try { await fauth.signOut(); } catch (e) {} location.reload(); },
+  reload: () => location.reload(),
+  importSeed: v => run(async () => { if (!isOwner()) fail('רק בעל המערכת יכול לבצע ייבוא.'); await importSeed(v === '1'); }, 'הייבוא הסתיים. עכשיו מוסיפים משתמשים בעמוד ההרשאות.'),
+});
+function subscribe() {
+  unsubs.forEach(f => f()); unsubs = []; loaded.clear();
+  COLS.forEach(c => unsubs.push(db.collection(c).onSnapshot(snap => {
+    const o = {}; snap.docs.forEach(d => { o[d.id] = { id: d.id, ...d.data() }; }); S[c] = o; loaded.add(c);
+    if (c === 'members') { const m = S.members[ME.email]; ME.member = m || null; if (!isOwner() && (!m || !m.active)) authState = 'nomember'; }
+    render();
+  }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
+}
+(function boot() {
+  const fc = CFG.firebase || {};
+  if (!window.firebase || !fc.apiKey || String(fc.apiKey).includes('PASTE')) { authState = 'nocfg'; render(); return; }
+  firebase.initializeApp(fc);
+  db = firebase.firestore(); try { db.settings({ ignoreUndefinedProperties: true }); } catch (e) {}
+  fauth = firebase.auth(); fauth.languageCode = 'he';
+  fauth.getRedirectResult().catch(e => toast('הכניסה לא הצליחה (' + (e.code || '') + ')'));
+  render();
+  fauth.onAuthStateChanged(async u => {
+    unsubs.forEach(f => f()); unsubs = [];
+    if (!u) { authState = 'out'; render(); return; }
+    ME.email = String(u.email || '').toLowerCase(); ME.name = u.displayName || '';
+    ME.owner = !!(u.emailVerified && ME.email && ME.email === String(CFG.ownerEmail || '').trim().toLowerCase());
+    if (!ME.owner) {
+      let m = null; try { const sn = await db.collection('members').doc(ME.email).get(); if (sn.exists) m = sn.data(); } catch (e) {}
+      if (!m || !m.active) { authState = 'nomember'; render(); return; }
+      ME.member = m;
+    }
+    authState = 'in'; render(); subscribe();
+  });
+})();
+})();
+</script>
+</body>
+</html>

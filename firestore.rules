@@ -1,0 +1,54 @@
+rules_version = '2';
+// כללי האבטחה של מערכת המלאי החטיבתית.
+// מדביקים את כל הקובץ ב-Firebase Console ← Firestore Database ← Rules ← Publish.
+// אם מחליפים את בעל המערכת, משנים את המייל בשורה של isOwner וגם ב-config.js.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function em() { return request.auth.token.email.lower(); }
+    function isOwner() { return signedIn() && em() == 'kfirdaabul1@gmail.com'; }
+    function memberPath() { return /databases/$(database)/documents/members/$(em()); }
+    function m() { return get(memberPath()).data; }
+    function isMember() { return signedIn() && exists(memberPath()) && m().active == true; }
+    function anyUser() { return isOwner() || isMember(); }
+    function brigadeAdmin() { return isOwner() || (isMember() && m().isAdmin == true && m().level == 'brigade'); }
+    function battalionAdmin() { return isMember() && m().isAdmin == true && m().level == 'battalion'; }
+    function signer() { return isOwner() || (isMember() && m().canSign == true); }
+    function receiver() { return isOwner() || (isMember() && m().canReceive == true && m().level == 'brigade'); }
+
+    // משתמשים: מנהל הרשאות חטיבתי מנהל את כולם. מנהל הרשאות גדודי מנהל רק את הגדוד שלו,
+    // ולא יכול לתת הרשאת קליטת אמצעים או לשייך לחטיבה.
+    match /members/{email} {
+      allow read: if anyUser() || (signedIn() && em() == email);
+      allow create, update: if request.resource.data.email == email && (brigadeAdmin() || (
+        battalionAdmin()
+        && request.resource.data.top == m().top
+        && request.resource.data.level != 'brigade'
+        && request.resource.data.get('canReceive', false) != true
+        && (resource == null || resource.data.top == m().top)));
+      allow delete: if brigadeAdmin() || (battalionAdmin() && resource.data.top == m().top);
+    }
+
+    // מבנה היחידות: רק מנהל חטיבתי. מנהל גדודי יכול להוסיף בעלי תפקיד בגדוד שלו.
+    match /nodes/{id} {
+      allow read: if anyUser();
+      allow create: if brigadeAdmin() || (battalionAdmin() && request.resource.data.level == 'role' && request.resource.data.get('top', '') == m().top);
+      allow update, delete: if brigadeAdmin();
+    }
+
+    match /skus/{id}  { allow read: if anyUser(); allow write: if brigadeAdmin() || receiver(); }
+    match /kits/{id}  { allow read: if anyUser(); allow write: if brigadeAdmin(); }
+    match /loans/{id} { allow read: if anyUser(); allow write: if receiver(); }
+
+    // ציוד, מלאי, קבלות, אישורים וחריגים: כל משתמש קורא, רק מורשה חתימה כותב.
+    match /tz/{id}        { allow read: if anyUser(); allow write: if signer(); }
+    match /stock/{id}     { allow read: if anyUser(); allow write: if signer(); }
+    match /moves/{id}     { allow read: if anyUser(); allow write: if signer(); }
+    match /confirms/{id}  { allow read: if anyUser(); allow write: if signer(); }
+    match /incidents/{id} { allow read: if anyUser(); allow write: if signer(); }
+
+    // כל השאר חסום
+    match /{document=**} { allow read, write: if false; }
+  }
+}
