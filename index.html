@@ -1134,13 +1134,23 @@ function renderGate() {
     <div class="actions"><button class="btn primary" data-act="reload">רענון</button><button class="btn" data-act="logout">כניסה עם חשבון אחר</button></div></div></section>`);
 }
 const DATA_COLS = ['tz', 'stock', 'moves', 'confirms', 'incidents', 'loans'];
+const DEMO_LOGAT = ['L-head', 'L-helmet', 'L-jerry', 'L-litter', 'L-sleep', 'L-vest'];
 function wipeView() {
   const total = DATA_COLS.reduce((t, c) => t + Object.keys(S[c] || {}).length, 0);
-  if (!total) return '';
+  const demoL = DEMO_LOGAT.filter(id => S.skus[id]);
+  if (!total && !demoL.length) return '';
   const parts = [['tz', 'פריטי צ׳'], ['stock', 'רשומות מלאי'], ['moves', 'קבלות'], ['confirms', 'אישורים'], ['incidents', 'חריגים'], ['loans', 'השאלות']].map(([c, l]) => `${Object.keys(S[c] || {}).length} ${l}`).join(', ');
+  const lStock = Object.values(S.stock || {}).filter(r => DEMO_LOGAT.includes(r.sku)).length;
   return `<section class="block"><h2>ניקוי נתונים<small>בעל המערכת בלבד</small></h2>
-    <div class="item sev-warn"><div class="title">מחיקת כל הציוד והתנועות</div><div class="small">יימחקו: ${parts}. מבנה החטיבה, סוגי הציוד, הקיטים והמשתמשים נשארים. אי אפשר לשחזר.</div>
-    <div class="actions">${ui.wipeArm ? '<button class="btn crit" data-act="wipeData">כן, למחוק הכל</button><button class="btn" data-act="wipeCancel">ביטול</button>' : '<button class="btn crit" data-act="wipeArm">מחיקת נתוני הדמו</button>'}</div></div></section>`;
+    ${demoL.length ? `<div class="item sev-warn"><div class="title">מחיקת פריטי הלוג״ת לדוגמה</div><div class="small">יימחקו מהקטלוג: ${demoL.map(id => esc(skuName(id))).join(', ')}${lStock ? `, וגם ${lStock} רשומות מלאי שלהם` : ''}. סוגי הצ׳ נשארים. פריטי לוג״ת חדשים מוסיפים בקליטה (״+ פריט חדש לקטלוג״).</div>
+    <div class="actions">${ui.wipeL ? '<button class="btn crit" data-act="wipeLogat">כן, למחוק</button><button class="btn" data-act="wipeCancel">ביטול</button>' : '<button class="btn crit" data-act="wipeLArm">מחיקת פריטי הלוג״ת</button>'}</div></div>` : ''}
+    ${total ? `<div class="item sev-warn"><div class="title">מחיקת כל הציוד והתנועות</div><div class="small">יימחקו: ${parts}. מבנה החטיבה, סוגי הציוד, הקיטים והמשתמשים נשארים. אי אפשר לשחזר.</div>
+    <div class="actions">${ui.wipeArm ? '<button class="btn crit" data-act="wipeData">כן, למחוק הכל</button><button class="btn" data-act="wipeCancel">ביטול</button>' : '<button class="btn crit" data-act="wipeArm">מחיקת נתוני הדמו</button>'}</div></div>` : ''}</section>`;
+}
+async function wipeLogat() {
+  const refs = DEMO_LOGAT.filter(id => S.skus[id]).map(id => db.collection('skus').doc(id));
+  Object.entries(S.stock || {}).forEach(([id, r]) => { if (DEMO_LOGAT.includes(r.sku)) refs.push(db.collection('stock').doc(id)); });
+  for (let i = 0; i < refs.length; i += 400) { const b = db.batch(); refs.slice(i, i + 400).forEach(r => b.delete(r)); await b.commit(); }
 }
 async function wipeData() {
   const refs = [];
@@ -1176,7 +1186,9 @@ Object.assign(H, {
   logout: async () => { try { await fauth.signOut(); } catch (e) {} location.reload(); },
   reload: () => location.reload(),
   wipeArm: () => { ui.wipeArm = true; render(); },
-  wipeCancel: () => { ui.wipeArm = false; render(); },
+  wipeCancel: () => { ui.wipeArm = false; ui.wipeL = false; render(); },
+  wipeLArm: () => { ui.wipeL = true; render(); },
+  wipeLogat: () => run(async () => { if (!isOwner()) fail('רק בעל המערכת יכול למחוק נתונים.'); ui.wipeL = false; await wipeLogat(); }, 'פריטי הלוג״ת לדוגמה נמחקו.'),
   wipeData: () => run(async () => { if (!isOwner()) fail('רק בעל המערכת יכול למחוק נתונים.'); ui.wipeArm = false; await wipeData(); }, 'נתוני הדמו נמחקו. המבנה והמשתמשים נשארו.'),
   importSeed: v => run(async () => { if (!isOwner()) fail('רק בעל המערכת יכול לבצע ייבוא.'); await importSeed(v === '1'); }, 'הייבוא הסתיים. עכשיו מוסיפים משתמשים בעמוד ההרשאות.'),
 });
