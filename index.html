@@ -412,7 +412,7 @@ function renderDrawer() {
 function navTabs() {
   const c = counts();
   const t = [['overview', 'דף ראשי', c.inc], ['free', 'מלאי חופשי', 0], ['moves', 'קבלות', c.toSign], ['tzrep', 'דוח צ׳', c.myOpen], ['desc', 'מתאר ציוד', 0]];
-  if (!S.nodes[me()].parent) t.push(['loans', 'השאלות מיחידות', c.loansDue], ['descs', 'מתארים', 0], ['catalog', 'קטלוג ציוד', 0], ['kits', 'קיטים', 0]);
+  if (!S.nodes[me()].parent) t.push(['loans', 'השאלות מיחידות', c.loansDue], ['descs', 'מתארים', 0], ...(canCatalog() ? [['catalog', 'קטלוג ציוד', 0]] : []), ['kits', 'קיטים', 0]);
   if (hasPermPage(me())) t.push(['unit', 'הרשאות', permScope().filter(u => !MEM().some(m => m.active && m.canSign && m.unit === u)).length]);
   return t;
 }
@@ -572,7 +572,8 @@ function renderReport(m) {
 const canCatalog = () => isOwner() || isBrigadeAdmin() || !!(ME.member && ME.member.active && ME.member.canReceive && ME.member.level === 'brigade');
 const skuUse = id => ({ qty: Object.values(S.stock).filter(x => x.sku === id).reduce((a, x) => a + (x.qty || 0), 0), tz: liveTz().filter(t => t.sku === id).length, kit: !!kitFor(id) });
 function renderCatalog() {
-  const root = rootNode(), edit = canCatalog() && me() === root.id, c = ui.cat;
+  if (!canCatalog()) return empty('אין לך הרשאה לקטלוג', 'הקטלוג פתוח לבעל המערכת, למנהלי הרשאות חטיבתיים ולמורשי קליטת אמצעים.');
+  const root = rootNode(), edit = me() === root.id, c = ui.cat;
   const sec = (kind, title) => {
     const list = Object.values(S.skus).filter(x => (kind === 'tz') === (x.kind === 'tz')).sort((a, b) => a.name.localeCompare(b.name, 'he'));
     return `<section class="block"><h2>${title}<small>${list.length} פריטים</small></h2>
@@ -582,7 +583,7 @@ function renderCatalog() {
   const units = desc(root.id).filter(u => S.nodes[u]);
   if (!units.includes(c.unit)) c.unit = root.id;
   const logat = Object.values(S.skus).filter(x => x.kind !== 'tz').sort((a, b) => a.name.localeCompare(b.name, 'he'));
-  return `<div class="scope">הקטלוג הוא רשימת סוגי הציוד שמופיעה בכל המערכת: בקליטה, בניפוק ובמתארים.${edit ? '' : ' רק מנהל הרשאות חטיבתי או מורשה קליטה יכולים לערוך אותו.'}</div>
+  return `<div class="scope">הקטלוג הוא רשימת סוגי הציוד שמופיעה בכל המערכת: בקליטה, בניפוק ובמתארים.</div>
   ${sec('logat', 'לוג״ת')}
   ${sec('tz', 'סוגי צ׳ (מצפינים ומכשירים)')}
   ${edit ? `<section class="block"><h2>הוספת פריטים לקטלוג<small>שורה לכל פריט</small></h2><div class="card formgrid">
