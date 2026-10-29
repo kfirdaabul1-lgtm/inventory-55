@@ -221,7 +221,7 @@ const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 
 const S = {}; COLS.forEach(c => S[c] = {});
 const loaded = new Set();
 let db = null, busy = false;
-const ui = { tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+const ui = { cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
 let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {} };
 const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
 try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
@@ -387,6 +387,7 @@ const ICO = {
   moves: SV('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
   weekly: SV('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/>'),
   incidents: SV('<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'),
+  catalog: SV('<path d="M4 5h16M4 10h16M4 15h10M4 20h7"/><path d="M17 15v6M14 18h6"/>'),
   kits: SV('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
   free: SV('<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'),
   tzrep: SV('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
@@ -411,7 +412,7 @@ function renderDrawer() {
 function navTabs() {
   const c = counts();
   const t = [['overview', 'דף ראשי', c.inc], ['free', 'מלאי חופשי', 0], ['moves', 'קבלות', c.toSign], ['tzrep', 'דוח צ׳', c.myOpen], ['desc', 'מתאר ציוד', 0]];
-  if (!S.nodes[me()].parent) t.push(['loans', 'השאלות מיחידות', c.loansDue], ['descs', 'מתארים', 0], ['kits', 'קיטים', 0]);
+  if (!S.nodes[me()].parent) t.push(['loans', 'השאלות מיחידות', c.loansDue], ['descs', 'מתארים', 0], ['catalog', 'קטלוג ציוד', 0], ['kits', 'קיטים', 0]);
   if (hasPermPage(me())) t.push(['unit', 'הרשאות', permScope().filter(u => !MEM().some(m => m.active && m.canSign && m.unit === u)).length]);
   return t;
 }
@@ -565,6 +566,35 @@ function renderReport(m) {
     <div class="list">${rowsHtml}</div>
     ${signing ? `<div class="card formgrid">${signerSel}<div class="small muted">סמן כל אמצעי שהתקבל בפועל. אמצעי שנשלח ולא סומן ייפתח כחוסר.</div><div class="actions"><button class="btn primary" data-act="sign" data-v="${esc(m.id)}">חתימה על הדוח וקבלת הציוד</button><button class="btn crit" data-act="reject" data-v="${esc(m.id)}">דחייה</button></div></div>` : ''}
   </div></div>`;
+}
+
+/* ---------- catalog ---------- */
+const canCatalog = () => isOwner() || isBrigadeAdmin() || !!(ME.member && ME.member.active && ME.member.canReceive && ME.member.level === 'brigade');
+const skuUse = id => ({ qty: Object.values(S.stock).filter(x => x.sku === id).reduce((a, x) => a + (x.qty || 0), 0), tz: liveTz().filter(t => t.sku === id).length, kit: !!kitFor(id) });
+function renderCatalog() {
+  const root = rootNode(), edit = canCatalog() && me() === root.id, c = ui.cat;
+  const sec = (kind, title) => {
+    const list = Object.values(S.skus).filter(x => (kind === 'tz') === (x.kind === 'tz')).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+    return `<section class="block"><h2>${title}<small>${list.length} פריטים</small></h2>
+    ${list.length ? `<div class="tablewrap"><table><thead><tr><th>שם</th><th>${kind === 'tz' ? 'פריטי צ׳ במערכת' : 'כמות במערכת'}</th>${edit ? '<th></th>' : ''}</tr></thead><tbody>${list.map(x => { const u = skuUse(x.id), used = u.qty > 0 || u.tz > 0 || u.kit, ed = ui.catName[x.id] !== undefined;
+      return `<tr><td>${ed ? `<input type="text" aria-label="שם חדש" data-bind="catName.${esc(x.id)}" value="${esc(ui.catName[x.id])}" style="min-width:140px">` : esc(x.name)}${u.kit ? ' <span class="pill acc">קיט</span>' : ''}</td><td class="num">${kind === 'tz' ? u.tz : u.qty}</td>${edit ? `<td><div class="actions" style="flex-wrap:nowrap">${ed ? `<button class="btn sm primary" data-act="catRename" data-v="${esc(x.id)}">שמירה</button><button class="btn sm" data-act="catEditX" data-v="${esc(x.id)}">ביטול</button>` : ui.catDel === x.id ? `<button class="btn sm crit" data-act="catDel" data-v="${esc(x.id)}">כן, למחוק</button><button class="btn sm" data-act="catDelX">ביטול</button>` : `<button class="btn sm" data-act="catEdit" data-v="${esc(x.id)}">שינוי שם</button>${used ? `<span class="small muted">בשימוש</span>` : `<button class="btn sm crit" data-act="catDelArm" data-v="${esc(x.id)}">מחיקה</button>`}`}</div></td>` : ''}</tr>`; }).join('')}</tbody></table></div>` : empty('אין עדיין פריטים', 'מוסיפים פריטים בטופס למטה.')}</section>`;
+  };
+  const units = desc(root.id).filter(u => S.nodes[u]);
+  if (!units.includes(c.unit)) c.unit = root.id;
+  const logat = Object.values(S.skus).filter(x => x.kind !== 'tz').sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  return `<div class="scope">הקטלוג הוא רשימת סוגי הציוד שמופיעה בכל המערכת: בקליטה, בניפוק ובמתארים.${edit ? '' : ' רק מנהל הרשאות חטיבתי או מורשה קליטה יכולים לערוך אותו.'}</div>
+  ${sec('logat', 'לוג״ת')}
+  ${sec('tz', 'סוגי צ׳ (מצפינים ומכשירים)')}
+  ${edit ? `<section class="block"><h2>הוספת פריטים לקטלוג<small>שורה לכל פריט</small></h2><div class="card formgrid">
+    <div class="toolbar"><div class="field" style="flex:0 1 200px"><label for="catKind">סוג</label><select id="catKind" data-bind="cat.kind"><option value="logat" ${c.kind === 'logat' ? 'selected' : ''}>לוג״ת</option><option value="tz" ${c.kind === 'tz' ? 'selected' : ''}>צ׳</option></select></div></div>
+    <div class="field"><label for="catNames">שמות הפריטים</label><textarea id="catNames" rows="6" data-bind="cat.names" placeholder="אפוד קרמי&#10;משקפת לילה&#10;ג׳ריקן 20 ל׳">${esc(c.names)}</textarea></div>
+    <div class="actions"><button class="btn primary" data-act="catAdd">הוספה לקטלוג</button></div></div></section>
+  <section class="block"><h2>הזנת מלאי לוג״ת קיים<small>מלאי פתיחה</small></h2><div class="card formgrid">
+    <div class="small muted">לציוד שכבר נמצא אצלכם. שורה לכל פריט: <b>שם, כמות</b>. פריט שלא קיים בקטלוג נוסף אליו אוטומטית. הכמות נוספת למה שכבר רשום ביחידה, ונשמרת קבלה מסוג ״מלאי פתיחה״. פריטי צ׳ מזינים בקליטה, עם מספרי הצ׳.</div>
+    <div class="field"><label for="catUnit">היחידה שהציוד נמצא אצלה</label><select id="catUnit" data-bind="cat.unit">${units.map(u => `<option value="${esc(u)}" ${c.unit === u ? 'selected' : ''}>${'  '.repeat(depth(u) - depth(root.id))}${esc(nm(u))}</option>`).join('')}</select></div>
+    <div class="field"><label for="catLines">פריטים וכמויות</label><textarea id="catLines" rows="8" data-bind="cat.lines" placeholder="אלונקה, 12&#10;שק שינה, 140&#10;פנס ראש, 60">${esc(c.lines)}</textarea></div>
+    ${logat.length ? `<div class="small muted">בקטלוג: ${logat.map(x => esc(x.name)).join(' · ')}</div>` : ''}
+    <div class="actions"><button class="btn primary" data-act="catOpen">הזנת המלאי</button></div></div></section>` : ''}`;
 }
 
 /* ---------- kits ---------- */
@@ -882,7 +912,7 @@ function render() {
   if (!scopeIds.includes(ui.acting)) ui.acting = ME.member && scopeIds.includes(ME.member.unit) ? ME.member.unit : scopeIds[0];
   renderHeader();
   const a = document.activeElement, fid = a && a.id, s0 = a && a.selectionStart, s1 = a && a.selectionEnd;
-  const views = { overview: renderOverview, free: renderFree, moves: renderMoves, tzrep: renderTzReport, desc: renderDescriptor, loans: renderLoans, descs: renderDescs, unit: renderUnit, kits: renderKits };
+  const views = { overview: renderOverview, free: renderFree, moves: renderMoves, tzrep: renderTzReport, desc: renderDescriptor, loans: renderLoans, descs: renderDescs, unit: renderUnit, kits: renderKits, catalog: renderCatalog };
   main.innerHTML = `<h1 class="ptitle">${esc(ui.pageTitle || '')}</h1>` + (views[ui.tab] || renderOverview)();
   renderSheet();
   if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); try { if (s0 != null) el.setSelectionRange(s0, s1); } catch (e) {} } }
@@ -1095,6 +1125,8 @@ function bind(el, rerender) {
   else if (a === 'signer') ui.signer[me()] = val;
   else if (a === 'addS' || a === 'addR' || a === 'addP' || a === 'newKit' || a === 'addM') ui[a][b] = val;
   else if (a === 'loan') ui.loan[b] = val;
+  else if (a === 'cat') ui.cat[b] = val;
+  else if (a === 'catName') ui.catName[b] = val;
   else if (a === 'per') { ui.perDraft[b] = ui.perDraft[b] || {}; ui.perDraft[b][c] = val; }
   else if (a === 'kitAdd') { ui.kitAdd[b] = ui.kitAdd[b] || {}; ui.kitAdd[b][c] = val; }
   else ui[a] = val;
@@ -1185,6 +1217,37 @@ Object.assign(H, {
   },
   logout: async () => { try { await fauth.signOut(); } catch (e) {} location.reload(); },
   reload: () => location.reload(),
+  catEdit: v => { ui.catName[v] = S.skus[v].name; ui.catDel = null; render(); },
+  catEditX: v => { delete ui.catName[v]; render(); },
+  catDelArm: v => { ui.catDel = v; render(); },
+  catDelX: () => { ui.catDel = null; render(); },
+  catRename: v => run(async () => { if (!canCatalog()) fail('אין לך הרשאה לערוך את הקטלוג.'); const name = (ui.catName[v] || '').trim(); if (!name) fail('הזן שם.'); if (Object.values(S.skus).some(x => x.id !== v && x.name === name)) fail('כבר יש פריט בשם הזה.'); await patch('skus', v, { name }); delete ui.catName[v]; }, 'השם עודכן.'),
+  catDel: v => run(async () => { if (!canCatalog()) fail('אין לך הרשאה לערוך את הקטלוג.'); const u = skuUse(v); if (u.qty > 0 || u.tz > 0) fail('לפריט יש ציוד במערכת. אי אפשר למחוק אותו.'); if (u.kit) fail('לפריט יש קיט. מוחקים קודם את הקיט בעמוד הקיטים.'); const b = db.batch(); b.delete(col('skus').doc(v)); Object.entries(S.stock).forEach(([id, x]) => { if (x.sku === v) b.delete(col('stock').doc(id)); }); await b.commit(); ui.catDel = null; }, 'הפריט נמחק מהקטלוג.'),
+  catAdd: () => run(async () => {
+    if (!canCatalog()) fail('אין לך הרשאה לערוך את הקטלוג.');
+    const c = ui.cat, have = new Set(Object.values(S.skus).map(x => x.name));
+    const names = [...new Set(c.names.split('\n').map(x => x.trim()).filter(Boolean))];
+    if (!names.length) fail('הזן לפחות שם אחד.');
+    const fresh = names.filter(n => !have.has(n)); if (!fresh.length) fail('כל הפריטים כבר קיימים בקטלוג.');
+    const b = db.batch(); fresh.forEach((name, i) => b.set(col('skus').doc((c.kind === 'tz' ? 'T-' : 'L-') + Date.now().toString(36) + i), { name, kind: c.kind, uom: 'יח׳' })); await b.commit();
+    c.names = ''; toast(`נוספו ${fresh.length} פריטים${names.length > fresh.length ? ` (${names.length - fresh.length} כבר היו בקטלוג)` : ''}.`);
+  }, null),
+  catOpen: () => run(async () => {
+    if (!canCatalog()) fail('אין לך הרשאה להזין מלאי פתיחה.');
+    const c = ui.cat, to = c.unit || rootNode().id;
+    const rows = c.lines.split('\n').map(x => x.trim()).filter(Boolean).map(r => { const m = r.match(/^(.*?)\s*[,\t:–]\s*(\d+)\s*$/) || r.match(/^(.*?)\s+(\d+)$/); return m ? { name: m[1].trim(), qty: parseInt(m[2], 10), raw: r } : { raw: r }; });
+    if (!rows.length) fail('הזן לפחות שורה אחת.');
+    const bad = rows.filter(r => !r.name || !(r.qty > 0)); if (bad.length) fail('לא הצלחתי לקרוא: ' + bad.map(r => '״' + r.raw + '״').join(', ') + '. כותבים שם, פסיק וכמות.');
+    const tzHit = rows.find(r => Object.values(S.skus).some(x => x.name === r.name && x.kind === 'tz')); if (tzHit) fail(`״${tzHit.name}״ הוא פריט צ׳. פריטי צ׳ מזינים בקליטה עם מספרי צ׳.`);
+    const byName = {}; Object.values(S.skus).filter(x => x.kind !== 'tz').forEach(x => { byName[x.name] = x.id; });
+    const sums = {}; const b = db.batch(); let k = 0;
+    rows.forEach(r => { if (!byName[r.name]) { const id = 'L-' + Date.now().toString(36) + (k++); byName[r.name] = id; b.set(col('skus').doc(id), { name: r.name, kind: 'logat', uom: 'יח׳' }); } const id = byName[r.name]; sums[id] = (sums[id] || 0) + r.qty; });
+    Object.entries(sums).forEach(([sku, q]) => b.set(col('stock').doc(to + '__' + sku), { holder: to, sku, qty: qtyOf(to, sku) + q }));
+    const who = isOwner() ? `${ME.name || ME.email} (בעל המערכת)` : memberLabel(ME.member);
+    b.set(col('moves').doc(uid('m')), { type: 'receive', from: null, to, lines: Object.entries(sums).map(([sku, qty]) => ({ sku, qty })), tz: [], status: 'signed', createdAt: now(), signedAt: now(), signedBy: who, note: 'מלאי פתיחה' });
+    await b.commit(); c.lines = '';
+    toast(`נרשמו ${Object.keys(sums).length} פריטים ב${nm(to)}.`);
+  }, null),
   wipeArm: () => { ui.wipeArm = true; render(); },
   wipeCancel: () => { ui.wipeArm = false; ui.wipeL = false; render(); },
   wipeLArm: () => { ui.wipeL = true; render(); },
