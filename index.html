@@ -221,8 +221,8 @@ const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 
 const S = {}; COLS.forEach(c => S[c] = {});
 const loaded = new Set();
 let db = null, busy = false;
-const ui = { tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
-let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {} };
+const ui = { kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [] };
 const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
 try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
 
@@ -522,6 +522,7 @@ function renderSheet() {
   </div></div>`;
 }
 
+const bundleKits = () => Object.values(S.kits).filter(k => !k.sku && (k.items || []).some(c => c.sku && S.skus[c.sku])).sort((a, b) => a.name.localeCompare(b.name, 'he'));
 function renderKitPicks() {
   const blocks = [];
   draft.tz.forEach(t => { const it = S.tz[t]; if (!it) return; const d = kitDraft(t, it.sku, it.kit && it.kit.items); if (d) blocks.push([t, `${tzNo(t)} ${esc(skuName(it.sku))}`, d, 1]); });
@@ -561,7 +562,7 @@ function renderReport(m) {
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2 style="font-size:18px">דוח החתמה · ${MTYPE[m.type] || m.type}</h2><button class="btn sm" data-act="closeSheet">סגירה</button></div>
     <dl class="kv"><dt>מוסר</dt><dd>${m.from ? esc(fullName(m.from)) : esc(m.fromExt || 'ספק / מחסן חיצוני')}</dd><dt>מקבל</dt><dd>${m.to ? esc(fullName(m.to)) : esc(m.toExt || 'גורם חיצוני')}</dd><dt>נשלח</dt><dd>${fmtDT(m.createdAt)}${m.createdBy ? ' · ' + esc(m.createdBy) : ''}</dd>
       ${m.signedAt ? `<dt>${m.status === 'rejected' ? 'נדחה' : 'נחתם'}</dt><dd>${fmtDT(m.signedAt)}${m.signedBy ? ' · ' + esc(m.signedBy) : ''}</dd>` : ''}<dt>סטטוס</dt><dd>${pill(MSTAT[m.status] || [m.status])}</dd>
-      ${m.note ? `<dt>הערה</dt><dd>${esc(m.note)}</dd>` : ''}</dl>
+      ${(m.kits || []).length ? `<dt>קיטים</dt><dd>${m.kits.map(k => esc(k.name) + ' × ' + k.count).join(', ')}</dd>` : ''}${m.note ? `<dt>הערה</dt><dd>${esc(m.note)}</dd>` : ''}</dl>
     ${m.kitShort ? `<div class="item sev-crit"><div class="small">בקבלה חסרו ${m.kitShort} אמצעים מתוך מה שנשלח. נפתח אירוע חריג.</div></div>` : ''}
     <div class="list">${rowsHtml}</div>
     ${signing ? `<div class="card formgrid">${signerSel}<div class="small muted">סמן כל אמצעי שהתקבל בפועל. אמצעי שנשלח ולא סומן ייפתח כחוסר.</div><div class="actions"><button class="btn primary" data-act="sign" data-v="${esc(m.id)}">חתימה על הדוח וקבלת הציוד</button><button class="btn crit" data-act="reject" data-v="${esc(m.id)}">דחייה</button></div></div>` : ''}
@@ -606,16 +607,16 @@ function renderKits() {
   const count = sku => liveTz().filter(t => t.sku === sku && activeTz(t)).length;
   const cards = kits.map(k => {
     const a = ui.kitAdd[k.id] || {};
-    return `<div class="card formgrid"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><h3 style="font-size:16px">${esc(k.name)}</h3><div class="small muted">פריט ראשי: ${esc(skuName(k.sku))}${S.skus[k.sku]?.kind === 'tz' ? ' · ' + count(k.sku) + ' פריטי צ׳ במערכת' : ''}</div></div>${canEdit ? `<button class="btn sm crit" data-act="delKit" data-v="${esc(k.id)}">מחיקת קיט</button>` : ''}</div>
-      ${(k.items || []).length ? `<div class="tablewrap"><table><thead><tr><th>אמצעי</th><th>כמות לפריט</th>${canEdit ? '<th></th>' : ''}</tr></thead><tbody>${k.items.map(c => `<tr><td>${esc(c.sku ? skuName(c.sku) : c.name)}${c.sku ? '' : ' <span class="pill warn">לא מהקטלוג</span>'}</td><td class="num">${c.qty}</td>${canEdit ? `<td><button class="btn sm" data-act="delComp" data-v="${esc(k.id)}|${esc(c.id)}">הסרה</button></td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="small muted">עדיין אין אמצעים בקיט.</div>'}
+    return `<div class="card formgrid"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><h3 style="font-size:16px">${esc(k.name)}</h3><div class="small muted">${k.sku ? `קיט ישן שמצורף אוטומטית לכל ${esc(skuName(k.sku))}` : `${(k.items || []).length} אמצעים · מנפקים אותו כחבילה בעמוד הקבלות`}</div></div>${canEdit ? `<button class="btn sm crit" data-act="delKit" data-v="${esc(k.id)}">מחיקת קיט</button>` : ''}</div>
+      ${(k.items || []).length ? `<div class="tablewrap"><table><thead><tr><th>אמצעי</th><th>כמות בקיט</th>${canEdit ? '<th></th>' : ''}</tr></thead><tbody>${k.items.map(c => `<tr><td>${esc(c.sku ? skuName(c.sku) : c.name)}${c.sku ? '' : ' <span class="pill warn">לא מהקטלוג</span>'}</td><td class="num">${c.qty}</td>${canEdit ? `<td><button class="btn sm" data-act="delComp" data-v="${esc(k.id)}|${esc(c.id)}">הסרה</button></td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="small muted">עדיין אין אמצעים בקיט.</div>'}
       ${canEdit ? `<div class="toolbar"><div class="field"><label for="kcn_${safeId(k.id)}">אמצעי נוסף מהקטלוג</label><select id="kcn_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.sku"><option value="">בחר…</option>${[['tz', 'צ׳'], ['logat', 'לוג״ת']].map(([kind, lbl]) => { const opts = Object.values(S.skus).filter(x => (kind === 'tz') === (x.kind === 'tz') && x.id !== k.sku && !(k.items || []).some(c => c.sku === x.id)).sort((x, y) => x.name.localeCompare(y.name, 'he')); return opts.length ? `<optgroup label="${lbl}">${opts.map(x => `<option value="${esc(x.id)}" ${a.sku === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>` : ''; }).join('')}</select></div><div class="field" style="flex:0 1 100px"><label for="kcq_${safeId(k.id)}">כמות</label><input type="number" min="1" id="kcq_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.qty" value="${esc(a.qty || '1')}"></div></div><div class="actions"><button class="btn sm" data-act="addComp" data-v="${esc(k.id)}">הוספה לקיט</button></div>` : ''}
     </div>`;
   }).join('');
-  return `<div class="scope">קיט מגדיר אילו אמצעים מגיעים יחד עם פריט ראשי. בכל ניפוק השולח מסמן מה נכלל, והמקבל מאשר בדוח ההחתמה מה התקבל.</div>
+  return `<div class="scope">קיט הוא חבילה של פריטים מהקטלוג, למשל ״ערכת 710״: מכשיר 710, סוללות ואנטנה. בעמוד הקבלות בוחרים קיט וכמות, והמערכת מוסיפה לניפוק את כל הפריטים שבו. בדוח ההחתמה מצוין איזה קיט נופק.</div>
   ${kits.length ? `<div class="list">${cards}</div>` : empty('עדיין לא הוגדרו קיטים', canEdit ? 'צור קיט חדש למטה.' : 'קיטים מגדירים בעמוד הקיטים של החטיבה.')}
   ${canEdit ? `<section class="block"><h2>קיט חדש</h2><div class="card formgrid"><div class="toolbar">
-    <div class="field"><label for="nkSku">פריט ראשי</label><select id="nkSku" data-bind="newKit.sku"><option value="">בחר פריט…</option>${free.map(x => `<option value="${esc(x.id)}" ${ui.newKit.sku === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
-    <div class="field"><label for="nkName">שם הקיט</label><input type="text" id="nkName" data-bind="newKit.name" value="${esc(ui.newKit.name)}" placeholder="למשל: קיט מכשיר 710"></div>
+    
+    <div class="field"><label for="nkName">שם הקיט</label><input type="text" id="nkName" data-bind="newKit.name" value="${esc(ui.newKit.name)}" placeholder="למשל: ערכת 710 מלאה"></div>
   </div><div class="actions"><button class="btn primary" data-act="addKit">יצירת קיט</button></div></div></section>` : '<div class="small muted">רק החטיבה יכולה להגדיר ולערוך קיטים.</div>'}`;
 }
 
@@ -657,6 +658,7 @@ function renderMoves() {
     <div class="field"><label for="dTarget">${draft.type === 'return' ? 'מוחזר אל' : 'נמסר אל'}</label><select id="dTarget" data-bind="draft.target"><option value="">בחר…</option>${targets.map(t => `<option value="${esc(t)}" ${draft.target === t ? 'selected' : ''}>${esc(nm(t))}</option>`).join('')}</select></div>
     <div class="field"><span class="lbl">ציוד לוג״ת</span>${myLogat.length ? `${lines}<div><button class="linkbtn" data-act="addLine">+ הוספת פריט לוג״ת</button></div>` : '<span class="small muted">אין עליך ציוד לוג״ת זמין.</span>'}</div>
     <div class="field"><span class="lbl">ציוד צ׳ (${draft.tz.length} נבחרו)</span>${myTz.length ? `<div class="checks">${myTz.map(t => `<label class="check"><input type="checkbox" id="dtz_${esc(t.id)}" data-act="dtz" data-v="${esc(t.id)}" ${draft.tz.includes(t.id) ? 'checked' : ''}> ${tzNo(t.id)} <span class="small muted">${esc(skuName(t.sku))}</span></label>`).join('')}</div>` : '<span class="small muted">אין עליך פריטי צ׳ זמינים.</span>'}</div>
+    ${bundleKits().length ? `<div class="field"><span class="lbl">ניפוק קיט</span><div class="toolbar"><div class="field"><label for="kpKit">קיט</label><select id="kpKit" data-bind="kitPick.kit"><option value="">בחר קיט…</option>${bundleKits().map(k => `<option value="${esc(k.id)}" ${ui.kitPick.kit === k.id ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select></div><div class="field" style="flex:0 1 100px"><label for="kpN">כמות</label><input type="number" min="1" id="kpN" data-bind="kitPick.n" value="${esc(ui.kitPick.n)}"></div></div>${ui.kitPick.kit && S.kits[ui.kitPick.kit] ? `<div class="small muted">כולל: ${S.kits[ui.kitPick.kit].items.filter(c => c.sku).map(c => esc(skuName(c.sku)) + ' × ' + c.qty).join(', ')}</div>` : ''}<div><button class="btn sm" data-act="addKitToDraft">הוספת הקיט לניפוק</button></div>${draft.kits.length ? `<div class="small">קיטים בניפוק: ${draft.kits.map(k => `<span class="pill acc">${esc(k.name)} × ${k.count}</span>`).join(' ')}</div>` : ''}</div>` : ''}
     ${renderKitPicks()}
     <div class="field"><label for="dNote">הערה (לא חובה)</label><input type="text" id="dNote" data-bind="draft.note" value="${esc(draft.note)}"></div>
     <div class="actions"><button class="btn primary" data-act="submitMove">${draft.type === 'transfer' ? 'שליחה לאישור' : 'שליחה לחתימת המקבל'}</button></div>
@@ -960,13 +962,36 @@ const H = {
   menu: () => { menuOpen = true; renderDrawer(); },
   menuClose: () => { menuOpen = false; renderDrawer(); },
   tab: v => { menuOpen = false; ui.tab = v; try { localStorage.setItem('inv.tab', v); } catch (e) {} render(); window.scrollTo(0, 0); },
-  goto: v => { if (!desc(viewRoot()).includes(v)) return; ui.acting = v; ui.permUnit = null; ui.repUnit = null; ui.repF = 'all'; draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {} }; try { localStorage.setItem('inv.acting', v); } catch (e) {} render(); window.scrollTo(0, 0); },
+  goto: v => { if (!desc(viewRoot()).includes(v)) return; ui.acting = v; ui.permUnit = null; ui.repUnit = null; ui.repF = 'all'; draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [] }; try { localStorage.setItem('inv.acting', v); } catch (e) {} render(); window.scrollTo(0, 0); },
   kind: v => { ui.stockKind = v; render(); },
   permSel: v => { ui.permUnit = v; ui.addM.unit = v; render(); },
   gotoPerm: v => { const owner = permOwner(v); H.goto(owner); ui.permUnit = v; H.tab('unit'); },
   detail: v => { ui.detail = v; renderSheet(); },
   closeSheet: (v, el, e) => { if (v === 'bg' && e.target !== el) return; ui.detail = null; ui.report = null; renderSheet(); },
   dtype: v => { draft.type = v; draft.target = ''; render(); },
+  addKitToDraft: () => {
+    const k = S.kits[ui.kitPick.kit]; const n = parseInt(ui.kitPick.n, 10);
+    if (!k) { toast('בחר קיט.'); return; } if (!(n > 0)) { toast('הזן כמות קיטים, 1 ומעלה.'); return; }
+    const id = me(), items = (k.items || []).filter(c => c.sku && S.skus[c.sku]);
+    const missing = [], pickTz = [];
+    for (const c of items) {
+      const need = c.qty * n;
+      if (S.skus[c.sku].kind === 'tz') {
+        const free = liveTz().filter(t => t.holder === id && !t.pending && activeTz(t) && t.sku === c.sku && !draft.tz.includes(t.id) && !pickTz.includes(t.id)).sort((a, b) => a.id.localeCompare(b.id)).slice(0, need);
+        if (free.length < need) missing.push(`${skuName(c.sku)}: חסרים ${need - free.length}`);
+        pickTz.push(...free.map(t => t.id));
+      } else {
+        const inDraft = draft.lines.filter(l => l.sku === c.sku).reduce((a, l) => a + (parseInt(l.qty, 10) || 0), 0);
+        if (avail(id, c.sku) < inDraft + need) missing.push(`${skuName(c.sku)}: זמין ${Math.max(0, avail(id, c.sku) - inDraft)} מתוך ${need}`);
+      }
+    }
+    if (missing.length) { toast('אין מספיק ציוד לקיט: ' + missing.join(' · ')); return; }
+    for (const c of items) if (S.skus[c.sku].kind !== 'tz') { const l = draft.lines.find(x => x.sku === c.sku); if (l) l.qty = String((parseInt(l.qty, 10) || 0) + c.qty * n); else draft.lines.push({ sku: c.sku, qty: String(c.qty * n) }); }
+    draft.tz.push(...pickTz);
+    const ex = draft.kits.find(x => x.id === k.id); if (ex) ex.count += n; else draft.kits.push({ id: k.id, name: k.name, count: n });
+    ui.kitPick = { kit: '', n: '1' };
+    toast(`${k.name} × ${n} נוסף לניפוק${pickTz.length ? `. נבחרו ${pickTz.length} פריטי צ׳, אפשר להחליף בסימון למעלה` : ''}.`); render();
+  },
   addLine: () => { draft.lines.push({ sku: '', qty: '' }); render(); },
   delLine: v => { draft.lines.splice(+v, 1); render(); },
   dtz: v => { const i = draft.tz.indexOf(v); if (i < 0) draft.tz.push(v); else { draft.tz.splice(i, 1); delete draft.kit[v]; } render(); },
@@ -974,8 +999,8 @@ const H = {
   recvInc: v => { const [mid, k, i] = v.split('|'); const m = S.moves[mid]; if (!m) return; const st = recvState(m, k); if (st[+i]) st[+i].got = !st[+i].got; renderSheet(); },
   openReport: v => { ui.report = v; renderSheet(); },
   addKit: () => run(async () => {
-    const sku = ui.newKit.sku; if (!sku) fail('בחר פריט ראשי לקיט.'); if (kitFor(sku)) fail('לפריט הזה כבר יש קיט.');
-    await put('kits', uid('k'), { name: ui.newKit.name.trim() || 'קיט ' + skuName(sku), sku, items: [] });
+    const name = ui.newKit.name.trim(); if (!name) fail('הזן שם לקיט.'); if (Object.values(S.kits).some(k => k.name === name)) fail('כבר יש קיט בשם הזה.');
+    await put('kits', uid('k'), { name, items: [] });
     ui.newKit = { sku: '', name: '' };
   }, 'הקיט נוצר. הוסף לו אמצעים.'),
   addComp: v => run(async () => {
@@ -1034,9 +1059,9 @@ const H = {
     const kit = {};
     for (const t of tz) { const d = kitDraft(t, S.tz[t].sku, S.tz[t].kit && S.tz[t].kit.items); if (d) kit[t] = d.map(c => ({ id: c.id, name: c.name, qty: c.qty, inc: !!c.inc })); }
     for (const l of lines) { const d = kitDraft('L:' + l.sku, l.sku, null); if (d) kit['L:' + l.sku] = d.map(c => ({ id: c.id, name: c.name, qty: c.qty * l.qty, inc: !!c.inc })); }
-    await put('moves', id, { type: draft.type, from, to: draft.target, approver: isT ? S.nodes[from].parent : null, lines, tz, kit, status: isT ? 'awaiting' : 'pending', createdAt: now(), createdBy: sg.label, note: draft.note.trim() });
+    await put('moves', id, { type: draft.type, from, to: draft.target, approver: isT ? S.nodes[from].parent : null, lines, tz, kit, kits: draft.kits.map(k => ({ id: k.id, name: k.name, count: k.count })), status: isT ? 'awaiting' : 'pending', createdAt: now(), createdBy: sg.label, note: draft.note.trim() });
     for (const t of tz) await patch('tz', t, { pending: id });
-    draft = { type: draft.type, target: '', lines: [], tz: [], note: '', kit: {} };
+    draft = { type: draft.type, target: '', lines: [], tz: [], note: '', kit: {}, kits: [] };
   }, 'נשלח. הציוד יעבור אחרי חתימת המקבל.'),
   sign: v => run(async () => {
     const m = S.moves[v]; if (!m || m.status !== 'pending') fail('התנועה כבר טופלה.');
@@ -1164,6 +1189,7 @@ function bind(el, rerender) {
   else if (a === 'addS' || a === 'addR' || a === 'addP' || a === 'newKit' || a === 'addM') ui[a][b] = val;
   else if (a === 'loan') ui.loan[b] = val;
   else if (a === 'cat') ui.cat[b] = val;
+  else if (a === 'kitPick') ui.kitPick[b] = val;
   else if (a === 'tek') { ui.tekDraft[b] = ui.tekDraft[b] || {}; ui.tekDraft[b][c] = val; }
   else if (a === 'catName') ui.catName[b] = val;
   else if (a === 'per') { ui.perDraft[b] = ui.perDraft[b] || {}; ui.perDraft[b][c] = val; }
