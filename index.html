@@ -921,6 +921,21 @@ function renderIncidents() {
     </div>`; }).join('')}</div>`;
 }
 
+/* ---------- structure additions (applied once by the owner or a brigade admin) ---------- */
+const STRUCT_ADD = [
+  ['hpk-mht', { level: 'battalion', name: 'חפ״ק מח״ט', order: 7, parent: 'b55' }],
+  ['hpk-smht', { level: 'battalion', name: 'חפ״ק סמח״ט', order: 8, parent: 'b55' }],
+];
+let structBusy = false;
+function ensureStructure() {
+  if (structBusy || !isBrigadeAdmin()) return;
+  const missing = STRUCT_ADD.filter(([id, n]) => !S.nodes[id] && S.nodes[n.parent]);
+  if (!missing.length) return;
+  structBusy = true;
+  const b = db.batch(); missing.forEach(([id, n]) => b.set(col('nodes').doc(id), n));
+  b.commit().then(() => toast('נוספו למבנה: ' + missing.map(([, n]) => n.name).join(', '))).catch(e => console.error(e)).finally(() => { structBusy = false; });
+}
+
 /* ---------- main render ---------- */
 function render() {
   const main = document.getElementById('main');
@@ -929,6 +944,7 @@ function render() {
   const root = rootNode();
   if (!root) { gate(isOwner() ? importView() : empty('עדיין אין יחידות במערכת', 'בעל המערכת צריך לבצע ייבוא ראשוני של מבנה החטיבה.')); return; }
   if (!isOwner() && (!ME.member || !ME.member.active || !S.nodes[ME.member.unit])) { authState = 'nomember'; renderGate(); return; }
+  ensureStructure();
   const scopeIds = desc(viewRoot());
   if (!scopeIds.includes(ui.acting)) ui.acting = ME.member && scopeIds.includes(ME.member.unit) ? ME.member.unit : scopeIds[0];
   renderHeader();
