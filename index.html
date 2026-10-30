@@ -221,7 +221,7 @@ const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 
 const S = {}; COLS.forEach(c => S[c] = {});
 const loaded = new Set();
 let db = null, busy = false;
-const ui = { cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+const ui = { tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
 let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {} };
 const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
 try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
@@ -765,11 +765,19 @@ function descCounts(unitId) {
   return out;
 }
 const skuOrder = (a, b) => ((S.skus[a]?.kind === 'tz' ? 0 : 1) - (S.skus[b]?.kind === 'tz' ? 0 : 1)) || skuName(a).localeCompare(skuName(b), 'he');
+const tekExplicit = (u, k) => { const v = S.skus[k]?.teken?.[u]; return v === undefined || v === null || v === '' ? null : +v; };
+function tekenOf(u, k) {
+  const e = tekExplicit(u, k); if (e !== null) return e;
+  let sum = null; kids(u).filter(c => c.level !== 'role').forEach(c => { const v = tekenOf(c.id, k); if (v !== null) sum = (sum || 0) + v; });
+  return sum;
+}
+const tekKeys = u => { const sc = new Set(desc(u)); return Object.values(S.skus).filter(x => x.teken && Object.keys(x.teken).some(id => sc.has(id) && tekExplicit(id, x.id) !== null)).map(x => x.id); };
+const gapCell = (have, tek, bold) => { const h = bold ? `<b>${have}</b>` : have || (tek !== null ? '0' : '<span class="muted">—</span>'); if (tek === null) return `<td class="num">${h}</td>`; const d = have - tek; return `<td class="num">${h}<span class="muted"> / ${tek}</span>${d < 0 ? ` <span class="pill crit">חסר ${-d}</span>` : d > 0 ? ` <span class="pill warn">עודף ${d}</span>` : ' <span class="pill good">מלא</span>'}</td>`; };
 function renderDescriptor() {
-  const id = me(), cnt = descCounts(id), keys = Object.keys(cnt).sort(skuOrder);
-  const row = k => { const r = cnt[k]; return `<tr><td>${esc(skuName(k))}</td><td class="num"><b>${r.total}</b></td><td class="num">${r.wh || '<span class="muted">—</span>'}</td><td class="num">${r.down || '<span class="muted">—</span>'}</td><td class="num">${r.loan || '<span class="muted">—</span>'}</td></tr>`; };
+  const id = me(), cnt = descCounts(id); tekKeys(id).forEach(k => { cnt[k] = cnt[k] || { total: 0, wh: 0, down: 0, loan: 0 }; }); const keys = Object.keys(cnt).sort(skuOrder);
+  const row = k => { const r = cnt[k]; return `<tr><td>${esc(skuName(k))}</td>${gapCell(r.total, tekenOf(id, k), true)}<td class="num">${r.wh || '<span class="muted">—</span>'}</td><td class="num">${r.down || '<span class="muted">—</span>'}</td><td class="num">${r.loan || '<span class="muted">—</span>'}</td></tr>`; };
   const tzK = keys.filter(k => S.skus[k]?.kind === 'tz'), lK = keys.filter(k => S.skus[k]?.kind !== 'tz');
-  const head = `<thead><tr><th>פריט</th><th>סה״כ</th><th>במחסן</th><th>מוחתם מטה</th><th>מתוכם בהשאלה</th></tr></thead>`;
+  const head = `<thead><tr><th>פריט</th><th>יש / תקן</th><th>במחסן</th><th>מוחתם מטה</th><th>מתוכם בהשאלה</th></tr></thead>`;
   return `<div class="scope">כמה יש ל<b>${esc(nm(id))}</b> מכל סוג ציוד, כולל מה שמוחתם על היחידות ובעלי התפקיד שמתחתיה.</div>
   <section class="block"><h2>מכשירים (צ׳)</h2>${tzK.length ? `<div class="tablewrap"><table>${head}<tbody>${tzK.map(row).join('')}</tbody></table></div>` : empty('אין פריטי צ׳', '')}</section>
   <section class="block"><h2>לוג״ת</h2>${lK.length ? `<div class="tablewrap"><table>${head}<tbody>${lK.map(row).join('')}</tbody></table></div>` : empty('אין לוג״ת', '')}</section>`;
@@ -780,15 +788,27 @@ function renderDescs() {
   const root = rootNode().id;
   const levels = [root, ...kids(root).filter(k => k.level !== 'role' && kids(k.id).length).map(k => k.id)];
   if (!levels.includes(ui.descsLevel)) ui.descsLevel = root;
-  const lv = ui.descsLevel;
+  const lv = ui.descsLevel, editing = ui.tekEdit && canCatalog();
   const cols = kids(lv).filter(k => k.level !== 'role' || liveTz().some(t => t.holder === k.id) || holdings(k.id).length);
+  const ecols = kids(lv).filter(k => k.level !== 'role');
   const totals = descCounts(lv);
+  tekKeys(lv).forEach(k => { totals[k] = totals[k] || { total: 0, wh: 0, down: 0, loan: 0 }; });
   const per = Object.fromEntries(cols.map(c => [c.id, descCounts(c.id)]));
   const keys = Object.keys(totals).sort(skuOrder);
   const cell = v => v ? `<td class="num">${v}</td>` : '<td class="num"><span class="muted">—</span></td>';
-  const section = (title, ks) => ks.length ? `<section class="block"><h2>${title}</h2><div class="tablewrap"><table><thead><tr><th>פריט</th>${cols.map(c => `<th>${esc(c.name)}</th>`).join('')}<th>מחסן ${esc(S.nodes[lv].name)}</th><th>סה״כ</th></tr></thead><tbody>${ks.map(k => `<tr><td>${esc(skuName(k))}</td>${cols.map(c => cell(per[c.id][k]?.total || 0)).join('')}${cell(totals[k].wh)}<td class="num"><b>${totals[k].total}</b></td></tr>`).join('')}</tbody></table></div></section>` : '';
-  return `<div class="scope">כמות הציוד מכל סוג בכל יחידה. בחר רמה כדי לפרק גדוד לפלוגות שלו.</div>
-  <div class="toolbar"><div class="field"><label for="descsLevel">רמת פירוט</label><select id="descsLevel" data-bind="descsLevel">${levels.map(l => `<option value="${esc(l)}" ${l === lv ? 'selected' : ''}>${l === root ? 'כל יחידות החטיבה' : esc(nm(l)) + ' לפי פלוגות'}</option>`).join('')}</select></div></div>
+  const section = (title, ks) => ks.length ? `<section class="block"><h2>${title}</h2><div class="tablewrap"><table><thead><tr><th>פריט</th>${cols.map(c => `<th>${esc(c.name)}</th>`).join('')}<th>מחסן ${esc(S.nodes[lv].name)}</th><th>סה״כ</th></tr></thead><tbody>${ks.map(k => `<tr><td>${esc(skuName(k))}</td>${cols.map(c => gapCell(per[c.id][k]?.total || 0, tekenOf(c.id, k))).join('')}${cell(totals[k].wh)}${gapCell(totals[k].total, tekenOf(lv, k), true)}</tr>`).join('')}</tbody></table></div></section>` : '';
+  const levelSel = `<div class="toolbar"><div class="field"><label for="descsLevel">רמת פירוט</label><select id="descsLevel" data-bind="descsLevel">${levels.map(l => `<option value="${esc(l)}" ${l === lv ? 'selected' : ''}>${l === root ? 'כל יחידות החטיבה' : esc(nm(l)) + ' לפי פלוגות'}</option>`).join('')}</select></div>${canCatalog() ? `<div class="actions">${editing ? '' : '<button class="btn primary" data-act="tekEdit">הזנת תקן</button>'}</div>` : ''}</div>`;
+  if (editing) {
+    const d = ui.tekDraft;
+    const val = (k, u) => d[k] && d[k][u] !== undefined ? d[k][u] : (tekExplicit(u, k) ?? '');
+    const esec = (title, kind) => { const ks = Object.values(S.skus).filter(x => (kind === 'tz') === (x.kind === 'tz')).sort((a, b) => a.name.localeCompare(b.name, 'he')).map(x => x.id); return ks.length ? `<section class="block"><h2>${title}</h2><div class="tablewrap"><table><thead><tr><th>פריט</th>${ecols.map(c => `<th>${esc(c.name)}</th>`).join('')}<th>סה״כ ${esc(S.nodes[lv].name)}</th></tr></thead><tbody>${ks.map(k => { const sum = ecols.reduce((a, c) => { const v = val(k, c.id); return a + (v === '' ? (tekenOf(c.id, k) || 0) : +v || 0); }, 0); return `<tr><td>${esc(skuName(k))}</td>${ecols.map(c => `<td><input type="number" min="0" inputmode="numeric" aria-label="תקן ${esc(skuName(k))} ${esc(c.name)}" data-bind="tek.${esc(k)}.${esc(c.id)}" value="${esc(val(k, c.id))}" placeholder="${tekExplicit(c.id, k) === null && tekenOf(c.id, k) !== null ? tekenOf(c.id, k) : ''}" style="width:72px"></td>`).join('')}<td class="num">${sum || '<span class="muted">—</span>'}</td></tr>`; }).join('')}</tbody></table></div></section>` : ''; };
+    return `<div class="scope">הזנת תקן: כמה מכל פריט כל יחידה אמורה להחזיק. משאירים ריק כשאין תקן. ${lv === root ? 'כאן מזינים תקן לכל גדוד. כדי להזין לפלוגות, בוחרים גדוד ברמת הפירוט.' : 'כאן מזינים תקן לפלוגות של ' + esc(nm(lv)) + '. תקן הגדוד מחושב מסכום הפלוגות, אלא אם הוזן לו תקן ישירות ברמת החטיבה.'}</div>
+    ${levelSel}
+    ${esec('מכשירים (צ׳)', 'tz')}${esec('לוג״ת', 'logat')}
+    <div class="actions" style="position:sticky;bottom:12px"><button class="btn primary" data-act="tekSave">שמירת התקן</button><button class="btn" data-act="tekCancel">ביטול</button></div>`;
+  }
+  return `<div class="scope">כמות הציוד מכל סוג בכל יחידה, מול התקן (יש / תקן). בחר רמה כדי לפרק גדוד לפלוגות שלו.</div>
+  ${levelSel}
   ${section('מכשירים (צ׳)', keys.filter(k => S.skus[k]?.kind === 'tz'))}
   ${section('לוג״ת', keys.filter(k => S.skus[k]?.kind !== 'tz'))}
   ${keys.length ? '' : empty('אין ציוד להצגה', '')}`;
@@ -1127,6 +1147,7 @@ function bind(el, rerender) {
   else if (a === 'addS' || a === 'addR' || a === 'addP' || a === 'newKit' || a === 'addM') ui[a][b] = val;
   else if (a === 'loan') ui.loan[b] = val;
   else if (a === 'cat') ui.cat[b] = val;
+  else if (a === 'tek') { ui.tekDraft[b] = ui.tekDraft[b] || {}; ui.tekDraft[b][c] = val; }
   else if (a === 'catName') ui.catName[b] = val;
   else if (a === 'per') { ui.perDraft[b] = ui.perDraft[b] || {}; ui.perDraft[b][c] = val; }
   else if (a === 'kitAdd') { ui.kitAdd[b] = ui.kitAdd[b] || {}; ui.kitAdd[b][c] = val; }
@@ -1218,6 +1239,20 @@ Object.assign(H, {
   },
   logout: async () => { try { await fauth.signOut(); } catch (e) {} location.reload(); },
   reload: () => location.reload(),
+  tekEdit: () => { ui.tekEdit = true; ui.tekDraft = {}; render(); },
+  tekCancel: () => { ui.tekEdit = false; ui.tekDraft = {}; render(); },
+  tekSave: () => run(async () => {
+    if (!canCatalog()) fail('אין לך הרשאה להזין תקן.');
+    const d = ui.tekDraft, b = db.batch(); let n = 0;
+    for (const [k, units] of Object.entries(d)) {
+      if (!S.skus[k]) continue;
+      const map = { ...(S.skus[k].teken || {}) };
+      for (const [u, v] of Object.entries(units)) { const t = String(v).trim(); if (t === '') delete map[u]; else { const q = parseInt(t, 10); if (!(q >= 0)) fail('תקן חייב להיות מספר שלם, 0 או יותר.'); map[u] = q; } }
+      b.update(col('skus').doc(k), { teken: map }); n++;
+    }
+    if (n) await b.commit();
+    ui.tekEdit = false; ui.tekDraft = {};
+  }, 'התקן נשמר.'),
   catEdit: v => { ui.catName[v] = S.skus[v].name; ui.catDel = null; render(); },
   catEditX: v => { delete ui.catName[v]; render(); },
   catDelArm: v => { ui.catDel = v; render(); },
