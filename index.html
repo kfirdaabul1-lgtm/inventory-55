@@ -570,7 +570,7 @@ function renderReport(m) {
 
 /* ---------- catalog ---------- */
 const canCatalog = () => isOwner() || isBrigadeAdmin() || !!(ME.member && ME.member.active && ME.member.canReceive && ME.member.level === 'brigade');
-const skuUse = id => ({ qty: Object.values(S.stock).filter(x => x.sku === id).reduce((a, x) => a + (x.qty || 0), 0), tz: liveTz().filter(t => t.sku === id).length, kit: !!kitFor(id) });
+const skuUse = id => ({ qty: Object.values(S.stock).filter(x => x.sku === id).reduce((a, x) => a + (x.qty || 0), 0), tz: liveTz().filter(t => t.sku === id).length, kit: !!kitFor(id) || Object.values(S.kits).some(k => (k.items || []).some(c => c.sku === id)) });
 function renderCatalog() {
   if (!canCatalog()) return empty('אין לך הרשאה לקטלוג', 'הקטלוג פתוח לבעל המערכת, למנהלי הרשאות חטיבתיים ולמורשי קליטת אמצעים.');
   const root = rootNode(), edit = me() === root.id, c = ui.cat;
@@ -607,8 +607,8 @@ function renderKits() {
   const cards = kits.map(k => {
     const a = ui.kitAdd[k.id] || {};
     return `<div class="card formgrid"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><h3 style="font-size:16px">${esc(k.name)}</h3><div class="small muted">פריט ראשי: ${esc(skuName(k.sku))}${S.skus[k.sku]?.kind === 'tz' ? ' · ' + count(k.sku) + ' פריטי צ׳ במערכת' : ''}</div></div>${canEdit ? `<button class="btn sm crit" data-act="delKit" data-v="${esc(k.id)}">מחיקת קיט</button>` : ''}</div>
-      ${(k.items || []).length ? `<div class="tablewrap"><table><thead><tr><th>אמצעי</th><th>כמות לפריט</th>${canEdit ? '<th></th>' : ''}</tr></thead><tbody>${k.items.map(c => `<tr><td>${esc(c.name)}</td><td class="num">${c.qty}</td>${canEdit ? `<td><button class="btn sm" data-act="delComp" data-v="${esc(k.id)}|${esc(c.id)}">הסרה</button></td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="small muted">עדיין אין אמצעים בקיט.</div>'}
-      ${canEdit ? `<div class="toolbar"><div class="field"><label for="kcn_${safeId(k.id)}">אמצעי נוסף</label><input type="text" id="kcn_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.name" value="${esc(a.name || '')}" placeholder="למשל: סוללה"></div><div class="field" style="flex:0 1 100px"><label for="kcq_${safeId(k.id)}">כמות</label><input type="number" min="1" id="kcq_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.qty" value="${esc(a.qty || '1')}"></div></div><div class="actions"><button class="btn sm" data-act="addComp" data-v="${esc(k.id)}">הוספה לקיט</button></div>` : ''}
+      ${(k.items || []).length ? `<div class="tablewrap"><table><thead><tr><th>אמצעי</th><th>כמות לפריט</th>${canEdit ? '<th></th>' : ''}</tr></thead><tbody>${k.items.map(c => `<tr><td>${esc(c.sku ? skuName(c.sku) : c.name)}${c.sku ? '' : ' <span class="pill warn">לא מהקטלוג</span>'}</td><td class="num">${c.qty}</td>${canEdit ? `<td><button class="btn sm" data-act="delComp" data-v="${esc(k.id)}|${esc(c.id)}">הסרה</button></td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="small muted">עדיין אין אמצעים בקיט.</div>'}
+      ${canEdit ? `<div class="toolbar"><div class="field"><label for="kcn_${safeId(k.id)}">אמצעי נוסף מהקטלוג</label><select id="kcn_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.sku"><option value="">בחר…</option>${[['tz', 'צ׳'], ['logat', 'לוג״ת']].map(([kind, lbl]) => { const opts = Object.values(S.skus).filter(x => (kind === 'tz') === (x.kind === 'tz') && x.id !== k.sku && !(k.items || []).some(c => c.sku === x.id)).sort((x, y) => x.name.localeCompare(y.name, 'he')); return opts.length ? `<optgroup label="${lbl}">${opts.map(x => `<option value="${esc(x.id)}" ${a.sku === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>` : ''; }).join('')}</select></div><div class="field" style="flex:0 1 100px"><label for="kcq_${safeId(k.id)}">כמות</label><input type="number" min="1" id="kcq_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.qty" value="${esc(a.qty || '1')}"></div></div><div class="actions"><button class="btn sm" data-act="addComp" data-v="${esc(k.id)}">הוספה לקיט</button></div>` : ''}
     </div>`;
   }).join('');
   return `<div class="scope">קיט מגדיר אילו אמצעים מגיעים יחד עם פריט ראשי. בכל ניפוק השולח מסמן מה נכלל, והמקבל מאשר בדוח ההחתמה מה התקבל.</div>
@@ -979,9 +979,10 @@ const H = {
     ui.newKit = { sku: '', name: '' };
   }, 'הקיט נוצר. הוסף לו אמצעים.'),
   addComp: v => run(async () => {
-    const a = ui.kitAdd[v] || {}, name = (a.name || '').trim(), q = parseInt(a.qty || '1', 10);
-    if (!name) fail('הזן שם לאמצעי.'); if (!(q > 0)) fail('כמות צריכה להיות 1 ומעלה.');
-    await patch('kits', v, { items: [...(S.kits[v].items || []), { id: uid('c'), name, qty: q }] });
+    const a = ui.kitAdd[v] || {}, sku = a.sku, q = parseInt(a.qty || '1', 10);
+    if (!sku || !S.skus[sku]) fail('בחר אמצעי מהקטלוג. אם הוא חסר, מוסיפים אותו קודם בעמוד קטלוג ציוד.'); if (!(q > 0)) fail('כמות צריכה להיות 1 ומעלה.');
+    if ((S.kits[v].items || []).some(c => c.sku === sku)) fail('האמצעי כבר נמצא בקיט.');
+    await patch('kits', v, { items: [...(S.kits[v].items || []), { id: uid('c'), sku, name: skuName(sku), qty: q }] });
     ui.kitAdd[v] = {};
   }, 'האמצעי נוסף לקיט.'),
   delComp: v => run(async () => { const [k, c] = v.split('|'); await patch('kits', k, { items: (S.kits[k].items || []).filter(x => x.id !== c) }); }, 'האמצעי הוסר מהקיט.'),
@@ -1274,7 +1275,7 @@ Object.assign(H, {
   catDelArm: v => { ui.catDel = v; render(); },
   catDelX: () => { ui.catDel = null; render(); },
   catRename: v => run(async () => { if (!canCatalog()) fail('אין לך הרשאה לערוך את הקטלוג.'); const name = (ui.catName[v] || '').trim(); if (!name) fail('הזן שם.'); if (Object.values(S.skus).some(x => x.id !== v && x.name === name)) fail('כבר יש פריט בשם הזה.'); await patch('skus', v, { name }); delete ui.catName[v]; }, 'השם עודכן.'),
-  catDel: v => run(async () => { if (!canCatalog()) fail('אין לך הרשאה לערוך את הקטלוג.'); const u = skuUse(v); if (u.qty > 0 || u.tz > 0) fail('לפריט יש ציוד במערכת. אי אפשר למחוק אותו.'); if (u.kit) fail('לפריט יש קיט. מוחקים קודם את הקיט בעמוד הקיטים.'); const b = db.batch(); b.delete(col('skus').doc(v)); Object.entries(S.stock).forEach(([id, x]) => { if (x.sku === v) b.delete(col('stock').doc(id)); }); await b.commit(); ui.catDel = null; }, 'הפריט נמחק מהקטלוג.'),
+  catDel: v => run(async () => { if (!canCatalog()) fail('אין לך הרשאה לערוך את הקטלוג.'); const u = skuUse(v); if (u.qty > 0 || u.tz > 0) fail('לפריט יש ציוד במערכת. אי אפשר למחוק אותו.'); if (u.kit) fail('הפריט משמש בקיט. מסירים אותו קודם מהקיט בעמוד הקיטים.'); const b = db.batch(); b.delete(col('skus').doc(v)); Object.entries(S.stock).forEach(([id, x]) => { if (x.sku === v) b.delete(col('stock').doc(id)); }); await b.commit(); ui.catDel = null; }, 'הפריט נמחק מהקטלוג.'),
   catAdd: () => run(async () => {
     if (!canCatalog()) fail('אין לך הרשאה לערוך את הקטלוג.');
     const c = ui.cat, have = new Set(Object.values(S.skus).map(x => x.name));
