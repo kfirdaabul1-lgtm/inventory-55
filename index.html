@@ -1342,6 +1342,17 @@ function subscribe() {
     render();
   }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
 }
+/* ---------- auto-update: reload when a newer version is published ---------- */
+const BUILD = '20261030211150';
+async function checkUpdate() {
+  try {
+    const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
+    const m = (await r.text()).match(/const BUILD = '([^']+)'/);
+    if (m && m[1] !== BUILD && m[1] !== '__BUILD__') location.replace(location.pathname + '?v=' + m[1]);
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+setTimeout(checkUpdate, 1500);
 (function boot() {
   const fc = CFG.firebase || {};
   if (!window.firebase || !fc.apiKey || String(fc.apiKey).includes('PASTE')) { authState = 'nocfg'; render(); return; }
