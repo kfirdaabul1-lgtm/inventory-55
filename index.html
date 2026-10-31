@@ -645,7 +645,8 @@ function renderKits() {
     const a = ui.kitAdd[k.id] || {};
     return `<div class="card formgrid"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><h3 style="font-size:16px">${esc(k.name)}</h3><div class="small muted">${k.sku ? `קיט ישן שמצורף אוטומטית לכל ${esc(skuName(k.sku))}` : `${(k.items || []).length} אמצעים · מנפקים אותו כחבילה בעמוד הקבלות`}</div></div>${canEdit ? `<button class="btn sm crit" data-act="delKit" data-v="${esc(k.id)}">מחיקת קיט</button>` : ''}</div>
       ${(k.items || []).length ? `<div class="tablewrap"><table><thead><tr><th>אמצעי</th><th>כמות בקיט</th>${canEdit ? '<th></th>' : ''}</tr></thead><tbody>${k.items.map(c => `<tr><td>${esc(c.sku ? skuName(c.sku) : c.name)}${c.sku ? '' : ' <span class="pill warn">לא מהקטלוג</span>'}</td><td class="num">${c.qty}</td>${canEdit ? `<td><button class="btn sm" data-act="delComp" data-v="${esc(k.id)}|${esc(c.id)}">הסרה</button></td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="small muted">עדיין אין אמצעים בקיט.</div>'}
-      ${canEdit ? `<div class="toolbar"><div class="field"><label for="kcn_${safeId(k.id)}">אמצעי נוסף מהקטלוג</label><select id="kcn_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.sku"><option value="">בחר…</option>${[['tz', 'צ׳'], ['logat', 'לוג״ת']].map(([kind, lbl]) => { const opts = Object.values(S.skus).filter(x => (kind === 'tz') === (x.kind === 'tz') && x.id !== k.sku && !(k.items || []).some(c => c.sku === x.id)).sort((x, y) => x.name.localeCompare(y.name, 'he')); return opts.length ? `<optgroup label="${lbl}">${opts.map(x => `<option value="${esc(x.id)}" ${a.sku === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>` : ''; }).join('')}</select></div><div class="field" style="flex:0 1 100px"><label for="kcq_${safeId(k.id)}">כמות</label><input type="number" min="1" id="kcq_${safeId(k.id)}" data-bind="kitAdd.${esc(k.id)}.qty" value="${esc(a.qty || '1')}"></div></div><div class="actions"><button class="btn sm" data-act="addComp" data-v="${esc(k.id)}">הוספה לקיט</button></div>` : ''}
+      ${canEdit ? `<div class="actions"><button class="btn sm ${a.open === 'tz' ? 'primary' : ''}" data-act="kitOpen" data-v="${esc(k.id)}|tz" aria-pressed="${a.open === 'tz'}">הוספת צ׳</button><button class="btn sm ${a.open === 'L' ? 'primary' : ''}" data-act="kitOpen" data-v="${esc(k.id)}|L" aria-pressed="${a.open === 'L'}">הוספת לוג״ת</button></div>
+      ${a.open ? (() => { const opts = Object.values(S.skus).filter(x => (a.open === 'tz') === (x.kind === 'tz') && !(k.items || []).some(c => c.sku === x.id)).sort((x, y) => x.name.localeCompare(y.name, 'he')); return `<div class="field"><span class="lbl">${a.open === 'tz' ? 'פריטי צ׳' : 'לוג״ת'} מהקטלוג · הזן כמות לכל פריט שנכלל בקיט</span>${opts.length ? `<div class="tablewrap"><table><thead><tr><th>פריט</th><th>כמות בקיט</th></tr></thead><tbody>${opts.map(x => `<tr><td>${esc(x.name)}</td><td><input type="number" min="0" id="kq_${safeId(k.id)}_${safeId(x.id)}" aria-label="כמות ${esc(x.name)}" data-bind="kitQ.${esc(k.id)}.${esc(x.id)}" value="${esc((a.q || {})[x.id] || '')}" style="width:80px"></td></tr>`).join('')}</tbody></table></div><div class="actions"><button class="btn sm primary" data-act="addComps" data-v="${esc(k.id)}">הוספה לקיט</button></div>` : `<span class="small muted">${a.open === 'tz' ? 'כל פריטי הצ׳ בקטלוג כבר בקיט, או שאין כאלה.' : 'כל פריטי הלוג״ת בקטלוג כבר בקיט, או שאין כאלה. מוסיפים פריטים בעמוד קטלוג ציוד.'}</span>`}</div>`; })() : ''}` : ''}
     </div>`;
   }).join('');
   return `<div class="scope">קיט הוא חבילה של פריטים מהקטלוג, למשל ״ערכת 710״: מכשיר 710, סוללות ואנטנה. בעמוד הקבלות בוחרים קיט וכמות, והמערכת מוסיפה לניפוק את כל הפריטים שבו. בדוח ההחתמה מצוין איזה קיט נופק.</div>
@@ -1079,6 +1080,14 @@ const H = {
     await put('kits', uid('k'), { name, items: [] });
     ui.newKit = { sku: '', name: '' };
   }, 'הקיט נוצר. הוסף לו אמצעים.'),
+  kitOpen: v => { const [kid, kk] = v.split('|'); const o = ui.kitAdd[kid] = ui.kitAdd[kid] || {}; o.open = o.open === kk ? null : kk; render(); },
+  addComps: v => run(async () => {
+    const o = ui.kitAdd[v] || {}, add = [];
+    for (const [sku, raw] of Object.entries(o.q || {})) { const t = String(raw).trim(); if (!t) continue; const q = parseInt(t, 10); if (!(q >= 0)) fail('כמות חייבת להיות מספר.'); if (!q || !S.skus[sku]) continue; if ((S.kits[v].items || []).some(c => c.sku === sku)) continue; add.push({ id: uid('c') + add.length, sku, name: skuName(sku), qty: q }); }
+    if (!add.length) fail('הזן כמות לפחות לפריט אחד.');
+    await patch('kits', v, { items: [...(S.kits[v].items || []), ...add] });
+    ui.kitAdd[v] = { open: null };
+  }, 'הפריטים נוספו לקיט.'),
   addComp: v => run(async () => {
     const a = ui.kitAdd[v] || {}, sku = a.sku, q = parseInt(a.qty || '1', 10);
     if (!sku || !S.skus[sku]) fail('בחר אמצעי מהקטלוג. אם הוא חסר, מוסיפים אותו קודם בעמוד קטלוג ציוד.'); if (!(q > 0)) fail('כמות צריכה להיות 1 ומעלה.');
@@ -1276,6 +1285,7 @@ function bind(el, rerender) {
   else if (a === 'tek') { ui.tekDraft[b] = ui.tekDraft[b] || {}; ui.tekDraft[b][c] = val; }
   else if (a === 'catName') ui.catName[b] = val;
   else if (a === 'per') { ui.perDraft[b] = ui.perDraft[b] || {}; ui.perDraft[b][c] = val; }
+  else if (a === 'kitQ') { const o = ui.kitAdd[b] = ui.kitAdd[b] || {}; o.q = o.q || {}; o.q[c] = val; }
   else if (a === 'kitAdd') { ui.kitAdd[b] = ui.kitAdd[b] || {}; ui.kitAdd[b][c] = val; }
   else ui[a] = val;
   if (rerender) render();
@@ -1426,7 +1436,7 @@ function subscribe() {
   }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
 }
 /* ---------- auto-update: reload when a newer version is published ---------- */
-const BUILD = '20261031042112';
+const BUILD = '20261031042234';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
