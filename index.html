@@ -221,7 +221,7 @@ const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 
 const S = {}; COLS.forEach(c => S[c] = {});
 const loaded = new Set();
 let db = null, busy = false;
-const ui = { crQ: {}, tzSku: '', rm: { reason: '', note: '', open: false }, rmL: {}, signMode: 'eq', veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+const ui = { reg: { name: '', roleTitle: '', pn: '', unit: '' }, crQ: {}, tzSku: '', rm: { reason: '', note: '', open: false }, rmL: {}, signMode: 'eq', veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
 let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [], veh: [] };
 const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
 try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
@@ -421,7 +421,7 @@ function navTabs() {
   const t = [['overview', 'דף ראשי', c.inc], ['free', 'מלאי חופשי', 0], ['sign', 'החתמות', 0], ['moves', 'קבלות', c.toSign], ['tzrep', 'דוח צ׳', c.myOpen], ['desc', 'מתאר ציוד', 0]];
   if (!S.nodes[me()].parent) t.push(['loans', 'השאלות מיחידות', c.loansDue], ['descs', 'מתארים', 0], ...(canCatalog() ? [['catalog', 'קטלוג ציוד', 0]] : []), ['kits', 'קיטים', 0]);
   if (['brigade', 'battalion'].includes(S.nodes[me()].level) || vkids(me()).length || nodesArr().some(v => v.level === 'vehicle' && descU(me()).includes(v.parent))) t.push(['vehicles', 'רכבים', 0]);
-  if (hasPermPage(me())) t.push(['unit', 'הרשאות', permScope().filter(u => !MEM().some(m => m.active && m.canSign && m.unit === u)).length]);
+  if (hasPermPage(me())) t.push(['unit', 'הרשאות', MEM().filter(m => m.pendingReg && (me() === rootNode().id || permScope().includes(m.unit))).length || permScope().filter(u => !MEM().some(m => m.active && m.canSign && m.unit === u)).length]);
   return t;
 }
 /* ---------- legacy header ---------- */
@@ -961,13 +961,14 @@ function renderUnit() {
   const tid = permTarget(), n = S.nodes[tid], lv = n.level;
   const roles = kids(tid).filter(k => k.level === 'role');
   const spots = [tid, ...roles.map(r => r.id)];
-  const users = MEM().filter(m => spots.includes(m.unit)).sort((a, b) => (a.unit === tid ? 0 : 1) - (b.unit === tid ? 0 : 1) || (a.name || '').localeCompare(b.name || '', 'he'));
+  const users = MEM().filter(m => !m.pendingReg && spots.includes(m.unit)).sort((a, b) => (a.unit === tid ? 0 : 1) - (b.unit === tid ? 0 : 1) || (a.name || '').localeCompare(b.name || '', 'he'));
   const count = u => { const sp = [u, ...kids(u).filter(k => k.level === 'role').map(k => k.id)]; const l = MEM().filter(m => m.active && sp.includes(m.unit)); return [l.length, l.filter(m => m.canSign && m.unit === u).length]; };
   const adminOk = lv === 'brigade' || lv === 'battalion', recvOk = lv === 'brigade';
   const a = ui.addM;
   if (!spots.includes(a.unit)) a.unit = tid;
   const flag = (m, f, on, off) => `<button class="btn sm ${m[f] ? 'good on' : ''}" data-act="mflag" data-v="${esc(m.email)}|${f}" aria-pressed="${!!m[f]}">${m[f] ? on : off}</button>`;
-  return `<div class="scope">עמוד ההרשאות של <b>${esc(owner.name)}</b>. כל משתמש נכנס עם חשבון ה־Google שלו, לפי כתובת המייל שהוגדרה כאן.</div>
+  const regs = MEM().filter(m => m.pendingReg && (isBrigadeAdmin() && me() === rootNode().id ? true : scope.includes(m.unit))).sort((a, b) => (a.regAt || '').localeCompare(b.regAt || ''));
+  return `${regs.length ? `<section class="block"><h2>בקשות הצטרפות<small>${regs.length} ממתינות</small></h2><div class="list">${regs.map(m => `<div class="item sev-warn"><div class="head"><div><div class="title">${esc(m.name)}${m.roleTitle ? ' · ' + esc(m.roleTitle) : ''}</div><div class="meta"><span dir="ltr">${esc(m.email)}</span> · ${esc(nm(m.unit))}${m.pn ? ' · מ״א ' + esc(m.pn) : ''}</div></div></div><div class="actions"><button class="btn sm primary" data-act="regApprove" data-v="${esc(m.email)}|self">אישור כבעל תפקיד</button><button class="btn sm" data-act="regApprove" data-v="${esc(m.email)}|unit">אישור כמשתמש ביחידה (צפייה)</button><button class="btn sm crit" data-act="regReject" data-v="${esc(m.email)}">דחייה</button></div><div class="small muted">בעל תפקיד: נוצר לו כרטיס אישי ביחידה והוא יכול לחתום רק על ציוד שמוחתם עליו. משתמש ביחידה: צפייה בלבד, ואת ההרשאות מוסיפים ברשימת המשתמשים.</div></div>`).join('')}</div></section>` : ''}<div class="scope">עמוד ההרשאות של <b>${esc(owner.name)}</b>. כל משתמש נכנס עם חשבון ה־Google שלו, לפי כתובת המייל שהוגדרה כאן.</div>
   <section class="block"><h2>יחידות בעמוד זה<small>לחיצה פותחת את המשתמשים של היחידה</small></h2>
     <div class="tablewrap"><table><thead><tr><th>יחידה</th><th>משתמשים</th><th>מורשי חתימה</th><th></th></tr></thead><tbody>${scope.map(u => { const [c, sg] = count(u); return `<tr class="click" data-act="permSel" data-v="${esc(u)}"><td>${u === tid ? '<b>' + esc(nm(u)) + '</b>' : esc(nm(u))}</td><td class="num">${c}</td><td>${sg ? `<span class="pill good">${sg}</span>` : '<span class="pill crit">אין</span>'}</td><td>${u === tid ? '<span class="pill acc">נבחרה</span>' : '<span class="small muted">פתיחה</span>'}</td></tr>`; }).join('')}</tbody></table></div></section>
   <section class="block"><h2>משתמשים · ${esc(nm(tid))}<small>${users.length} משתמשים</small></h2>
@@ -1123,6 +1124,27 @@ const H = {
   },
   addLine: () => { draft.lines.push({ sku: '', qty: '' }); render(); },
   delLine: v => { draft.lines.splice(+v, 1); render(); },
+  register: () => run(async () => {
+    const f = ui.reg, name = f.name.trim(), unit = f.unit;
+    if (!name) fail('הזן שם מלא.'); if (!unit || !regNodes[unit]) fail('בחר יחידה.');
+    if (f.pn && !/^\d{5,9}$/.test(String(f.pn).trim())) fail('מספר אישי צריך להכיל 5 עד 9 ספרות.');
+    let top = unit, n = regNodes[unit]; while (n && n.parent && regNodes[n.parent] && regNodes[n.parent].parent) { top = n.parent; n = regNodes[n.parent]; }
+    const data = { email: ME.email, name, roleTitle: f.roleTitle.trim(), pn: String(f.pn || '').trim(), unit, level: regNodes[unit].level, top, canSign: false, isAdmin: false, canReceive: false, active: false, pendingReg: true, regAt: now(), regName: ME.name || '' };
+    await col('members').doc(ME.email).set(data); ME.reg = data;
+  }, 'הבקשה נשלחה למנהל ההרשאות.'),
+  regCancel: () => run(async () => { await col('members').doc(ME.email).delete(); ME.reg = null; }, 'הבקשה בוטלה.'),
+  regApprove: v => run(async () => {
+    const [email, how] = v.split('|'), m0 = S.members[email]; if (!m0 || !m0.pendingReg) fail('הבקשה כבר טופלה.'); const { id: _drop, ...m } = m0;
+    if (!permScope().includes(m.unit) && !isBrigadeAdmin()) fail('הבקשה שייכת ליחידה שאינה בתחום שלך.');
+    if (how === 'self') {
+      const rid = uid('r');
+      await put('nodes', rid, { name: m.roleTitle || 'בעל תפקיד', person: m.name, level: 'role', parent: m.unit, top: topOf(m.unit), order: 0, selfEmail: email });
+      await put('members', email, { ...m, unit: rid, level: 'role', top: topOf(m.unit), canSign: true, isAdmin: false, canReceive: false, active: true, pendingReg: false, approvedBy: ME.email, approvedAt: now() });
+    } else {
+      await put('members', email, { ...m, canSign: false, isAdmin: false, canReceive: false, active: true, pendingReg: false, approvedBy: ME.email, approvedAt: now() });
+    }
+  }, 'הבקשה אושרה.'),
+  regReject: v => run(async () => { const m = S.members[v]; if (!m || !m.pendingReg) fail('הבקשה כבר טופלה.'); await col('members').doc(v).delete(); }, 'הבקשה נדחתה.'),
   creditAll: v => run(async () => { const m = S.moves[v], ci = creditInfo(m); if (!ci.any) fail('אין מה לזכות בקבלה הזו.'); await doCredit(m, { tz: ci.tz, lines: ci.lines, veh: ci.veh }); }, 'הקבלה זוכתה. הציוד חזר למחסן שלך.'),
   creditOne: v => run(async () => {
     const [mid, kind, ref] = v.split('|'); const m = S.moves[mid], ci = creditInfo(m); const sel = { tz: [], lines: {}, veh: [] };
@@ -1362,6 +1384,7 @@ function bind(el, rerender) {
   else if (a === 'veh') ui.veh[b] = val;
   else if (a === 'rm') ui.rm[b] = val;
   else if (a === 'crQ') ui.crQ[b] = val;
+  else if (a === 'reg') ui.reg[b] = val;
   else if (a === 'rmL') ui.rmL[b] = val;
   else if (a === 'vehAdd') { ui.vehAdd[b] = ui.vehAdd[b] || {}; ui.vehAdd[b][c] = val; }
   else if (a === 'vehL') { const o = ui.vehAdd[b] = ui.vehAdd[b] || {}; o.L = o.L || {}; o.L[c] = val; }
@@ -1402,9 +1425,25 @@ function renderGate() {
   if (authState === 'out') return gate(`<section class="block" style="max-width:440px;margin:24px auto 0;width:100%"><h1 class="ptitle">כניסה לתקשוב 55</h1>
     <div class="card formgrid"><button class="btn primary" style="justify-content:center;padding:12px" data-act="login">כניסה עם Google</button>
     <div class="small muted">הכניסה פתוחה רק למי שמנהל ההרשאות הוסיף לפי כתובת המייל שלו. אם הכניסה לא נפתחת, פתחו את הקישור ישירות בדפדפן (Chrome או Safari) ולא מתוך אפליקציה אחרת.</div></div></section>`);
-  if (authState === 'nomember') return gate(`<section class="block" style="max-width:520px;margin:24px auto 0;width:100%"><h1 class="ptitle">החשבון עוד לא שויך ליחידה</h1>
-    <div class="card formgrid"><div>נכנסת בתור <b dir="ltr">${esc(ME.email)}</b>.</div><div class="small muted">בקש ממנהל ההרשאות ביחידה שלך להוסיף את המייל הזה בעמוד ההרשאות. אחרי שהוא מוסיף, רענן את הדף.</div>
-    <div class="actions"><button class="btn primary" data-act="reload">רענון</button><button class="btn" data-act="logout">כניסה עם חשבון אחר</button></div></div></section>`);
+  if (authState === 'nomember') {
+    const r = ME.reg, f = ui.reg;
+    if (r && r.pendingReg) return gate(`<section class="block" style="max-width:520px;margin:24px auto 0;width:100%"><h1 class="ptitle">הבקשה ממתינה לאישור</h1>
+    <div class="card formgrid"><div>${esc(r.name)}${r.roleTitle ? ' · ' + esc(r.roleTitle) : ''} · <b>${esc(regNodes[r.unit]?.name || '')}</b></div><div class="small muted">מנהל ההרשאות של היחידה יאשר את הבקשה. אחרי האישור תוכל לחתום על ציוד שמוחתם עליך אישית, ומנהל ההרשאות יכול לתת לך הרשאות נוספות. רענן את הדף אחרי שאישרו.</div>
+    <div class="actions"><button class="btn primary" data-act="reload">רענון</button><button class="btn" data-act="regCancel">ביטול הבקשה</button><button class="btn" data-act="logout">יציאה</button></div></div></section>`);
+    const nodes = Object.entries(regNodes).map(([id, n]) => ({ id, ...n }));
+    const kidsOf = id => nodes.filter(n => n.parent === id && n.level !== 'role' && n.level !== 'vehicle').sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, 'he'));
+    const root = nodes.find(n => !n.parent), opts = [];
+    const walk = (n, d) => { opts.push([n.id, '  '.repeat(d) + n.name]); kidsOf(n.id).forEach(k => walk(k, d + 1)); };
+    if (root) walk(root, 0);
+    return gate(`<section class="block" style="max-width:520px;margin:24px auto 0;width:100%"><h1 class="ptitle">הרשמה לתקשוב 55</h1>
+    <div class="card formgrid"><div>נכנסת בתור <b dir="ltr">${esc(ME.email)}</b>. מלא את הפרטים ובחר את היחידה שלך. מנהל ההרשאות של היחידה יאשר את הבקשה.</div>
+    ${regState === 'err' ? '<div class="item sev-warn"><div class="small">ההרשמה עוד לא פתוחה במערכת. בקש ממנהל ההרשאות להוסיף אותך לפי המייל שלמעלה.</div></div>' : regState === 'load' ? '<div class="small muted">טוען יחידות…</div>' : `
+    <div class="field"><label for="rgName">שם מלא</label><input type="text" id="rgName" data-bind="reg.name" value="${esc(f.name)}"></div>
+    <div class="field"><label for="rgRole">תפקיד</label><input type="text" id="rgRole" data-bind="reg.roleTitle" value="${esc(f.roleTitle)}" placeholder="למשל: קשר פלוגתי"></div>
+    <div class="field"><label for="rgPn">מספר אישי (לא חובה)</label><input type="text" id="rgPn" inputmode="numeric" data-bind="reg.pn" value="${esc(f.pn)}"></div>
+    <div class="field"><label for="rgUnit">יחידה</label><select id="rgUnit" data-bind="reg.unit"><option value="">בחר יחידה…</option>${opts.map(([id, l]) => `<option value="${esc(id)}" ${f.unit === id ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+    <div class="actions"><button class="btn primary" data-act="register">שליחת בקשת הרשמה</button><button class="btn" data-act="logout">כניסה עם חשבון אחר</button></div>`}</div></section>`);
+  }
 }
 const DATA_COLS = ['tz', 'stock', 'moves', 'confirms', 'incidents', 'loans'];
 const DEMO_LOGAT = ['L-head', 'L-helmet', 'L-jerry', 'L-litter', 'L-sleep', 'L-vest'];
@@ -1519,7 +1558,7 @@ function subscribe() {
   }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
 }
 /* ---------- auto-update: reload when a newer version is published ---------- */
-const BUILD = '20261031062716';
+const BUILD = '20261031114547';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
@@ -1529,6 +1568,12 @@ async function checkUpdate() {
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
 setTimeout(checkUpdate, 1500);
+let regNodes = {}, regState = 'load';
+async function loadRegNodes() {
+  try { const sn = await db.collection('nodes').get(); regNodes = {}; sn.docs.forEach(d => { regNodes[d.id] = d.data(); }); regState = 'ok'; }
+  catch (e) { regState = 'err'; }
+  if (authState === 'nomember') render();
+}
 (function boot() {
   const fc = CFG.firebase || {};
   if (!window.firebase || !fc.apiKey || String(fc.apiKey).includes('PASTE')) { authState = 'nocfg'; render(); return; }
@@ -1544,7 +1589,7 @@ setTimeout(checkUpdate, 1500);
     ME.owner = !!(u.emailVerified && ME.email && ME.email === String(CFG.ownerEmail || '').trim().toLowerCase());
     if (!ME.owner) {
       let m = null; try { const sn = await db.collection('members').doc(ME.email).get(); if (sn.exists) m = sn.data(); } catch (e) {}
-      if (!m || !m.active) { authState = 'nomember'; render(); return; }
+      if (!m || !m.active) { ME.reg = m; authState = 'nomember'; render(); loadRegNodes(); return; }
       ME.member = m;
     }
     authState = 'in'; render(); subscribe();

@@ -21,6 +21,12 @@ service cloud.firestore {
     // ולא יכול לתת הרשאת קליטת אמצעים או לשייך לחטיבה.
     match /members/{email} {
       allow read: if anyUser() || (signedIn() && em() == email);
+      // הרשמה עצמית: כל מי שנכנס עם Google יכול לשלוח בקשה לעצמו, בלי הרשאות ובמצב לא פעיל.
+      allow create: if signedIn() && em() == email && request.resource.data.email == email
+        && request.resource.data.pendingReg == true && request.resource.data.active == false
+        && request.resource.data.canSign == false && request.resource.data.isAdmin == false
+        && request.resource.data.get('canReceive', false) == false;
+      allow delete: if signedIn() && em() == email && resource.data.get('pendingReg', false) == true;
       allow create, update: if request.resource.data.email == email && (brigadeAdmin() || (
         battalionAdmin()
         && request.resource.data.top == m().top
@@ -33,7 +39,7 @@ service cloud.firestore {
     // מבנה היחידות: רק מנהל חטיבתי. מנהל גדודי יכול להוסיף בעלי תפקיד בגדוד שלו.
     // רכבים הם רשומות ביחידות (level == 'vehicle'): מורשה חתימה יוצר, מחתים ומוחק אותם.
     match /nodes/{id} {
-      allow read: if anyUser();
+      allow read: if signedIn();
       allow create: if brigadeAdmin()
         || (battalionAdmin() && request.resource.data.level == 'role' && request.resource.data.get('top', '') == m().top)
         || (signer() && request.resource.data.level == 'vehicle');
