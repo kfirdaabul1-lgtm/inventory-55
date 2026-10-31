@@ -389,6 +389,7 @@ const SV = p => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" str
 const ICO = {
   overview: SV('<path d="M3 11l9-7 9 7v9H3z"/><path d="M9 20v-6h6v6"/>'),
   stock: SV('<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'),
+  sign: SV('<path d="M4 20h16"/><path d="M6 16l9.5-9.5a2.1 2.1 0 013 3L9 19H6z"/>'),
   moves: SV('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
   weekly: SV('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/>'),
   incidents: SV('<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'),
@@ -417,7 +418,7 @@ function renderDrawer() {
 }
 function navTabs() {
   const c = counts();
-  const t = [['overview', 'דף ראשי', c.inc], ['free', 'מלאי חופשי', 0], ['moves', 'קבלות', c.toSign], ['tzrep', 'דוח צ׳', c.myOpen], ['desc', 'מתאר ציוד', 0]];
+  const t = [['overview', 'דף ראשי', c.inc], ['free', 'מלאי חופשי', 0], ['sign', 'החתמות', 0], ['moves', 'קבלות', c.toSign], ['tzrep', 'דוח צ׳', c.myOpen], ['desc', 'מתאר ציוד', 0]];
   if (!S.nodes[me()].parent) t.push(['loans', 'השאלות מיחידות', c.loansDue], ['descs', 'מתארים', 0], ...(canCatalog() ? [['catalog', 'קטלוג ציוד', 0]] : []), ['kits', 'קיטים', 0]);
   if (['brigade', 'battalion'].includes(S.nodes[me()].level) || vkids(me()).length || nodesArr().some(v => v.level === 'vehicle' && descU(me()).includes(v.parent))) t.push(['vehicles', 'רכבים', 0]);
   if (hasPermPage(me())) t.push(['unit', 'הרשאות', permScope().filter(u => !MEM().some(m => m.active && m.canSign && m.unit === u)).length]);
@@ -673,7 +674,7 @@ function targetsFor(type) {
   if (type === 'transfer') return kids(n.parent).filter(k => k.id !== me() && k.level === n.level).map(k => k.id);
   return [];
 }
-function renderMoves() {
+function renderMoves(mode = 'list') {
   const id = me(), n = S.nodes[id], sc = new Set(desc(id));
   const types = allowedTypes();
   if (!types.includes(draft.type)) draft.type = types[0] || null;
@@ -706,7 +707,8 @@ function renderMoves() {
   const toSign = Object.values(S.moves).filter(m => m.status === 'pending' && m.to === id);
   const toApprove = Object.values(S.moves).filter(m => m.status === 'awaiting' && m.approver === id);
   const outgoing = Object.values(S.moves).filter(m => openMove(m) && m.from === id);
-  const hist = Object.values(S.moves).filter(m => (sc.has(m.to) || sc.has(m.from)) && !openMove(m)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 15);
+  const hist = Object.values(S.moves).filter(m => (sc.has(m.to) || sc.has(m.from)) && !openMove(m)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const histN = ui.histN || 30;
 
   const receive = n.level === 'brigade' ? renderReceive() : '';
   return `
@@ -715,10 +717,10 @@ function renderMoves() {
     ${toApprove.map(m => moveItem(m, `<button class="btn primary sm" data-act="approve" data-v="${m.id}">אישור ההעברה</button><button class="btn sm crit" data-act="reject" data-v="${m.id}">דחייה</button>`)).join('')}
     ${toSign.map(m => moveItem(m, `<button class="btn primary sm" data-act="openReport" data-v="${m.id}">פתיחת דוח החתמה וחתימה</button><button class="btn sm crit" data-act="reject" data-v="${m.id}">דחייה</button>`)).join('')}
   </div></section>` : ''}
-  <section class="block"><h2>פעולה חדשה<small>פועל בתור ${esc(nm(id))}</small></h2>${form}</section>
-  ${receive}
-  ${outgoing.length ? `<section class="block"><h2>שלחת וממתין</h2><div class="list">${outgoing.map(m => moveItem(m, `<button class="btn sm" data-act="cancel" data-v="${m.id}">ביטול</button>`)).join('')}</div></section>` : ''}
-  <section class="block"><h2>היסטוריה בתחום</h2>${hist.length ? `<div class="list">${hist.map(m => moveItem(m)).join('')}</div>` : empty('אין עדיין תנועות שהסתיימו', '')}</section>`;
+  ${mode === 'form' ? `<section class="block"><h2>החתמה חדשה<small>פועל בתור ${esc(nm(id))}</small></h2>${form}</section>
+  ${receive}` : ''}
+  ${outgoing.length ? `<section class="block"><h2>שלחת וממתין לחתימה</h2><div class="list">${outgoing.map(m => moveItem(m, `<button class="btn sm" data-act="openReport" data-v="${m.id}">דוח</button><button class="btn sm" data-act="cancel" data-v="${m.id}">ביטול</button>`)).join('')}</div></section>` : ''}
+  ${mode === 'list' ? `<section class="block"><h2>כל הקבלות<small>${hist.length} קבלות · לחיצה על דוח פותחת את דוח ההחתמה</small></h2>${hist.length ? `<div class="list">${hist.slice(0, histN).map(m => moveItem(m, `<button class="btn sm" data-act="openReport" data-v="${m.id}">דוח</button>`)).join('')}</div>${hist.length > histN ? '<div class="actions"><button class="btn" data-act="histMore">הצגת קבלות נוספות</button></div>' : ''}` : empty('אין עדיין קבלות', 'קבלות נוצרות כשמחתימים, מקבלים או קולטים ציוד.')}</section>` : ''}`;
 }
 function renderReceive() {
   const skus = Object.values(S.skus).filter(s => s.kind === rcv.kind).sort((a, b) => a.name.localeCompare(b.name, 'he'));
@@ -771,7 +773,7 @@ function renderFree() {
   const units = logat.reduce((x, l) => x + l.qty, 0);
   return `<div class="scope">${isRole ? `ציוד שחתום אישית על <b>${esc(nm(id))}</b>.` : `ציוד שנמצא במחסן של <b>${esc(nm(id))}</b> ולא מוחתם על אף יחידה או בעל תפקיד מתחתיה. זה הציוד הזמין לניפוק.`}</div>
   <div class="stats"><div class="stat lead"><span class="k">פריטי צ׳ פנויים</span><span class="v">${tzs.length}</span></div><div class="stat"><span class="k">לוג״ת פנוי</span><span class="v">${units}<small> · ${logat.length} מק״טים</small></span></div></div>
-  <div class="toolbar"><div class="field"><label for="freeQ">חיפוש</label><input type="text" id="freeQ" data-bind="freeQ" value="${esc(ui.freeQ)}" placeholder="שם מכשיר או מספר צ׳"></div>${!isRole && kids(id).length ? '<div class="actions"><button class="btn primary" data-act="tab" data-v="moves">ניפוק מהמלאי החופשי</button></div>' : ''}</div>
+  <div class="toolbar"><div class="field"><label for="freeQ">חיפוש</label><input type="text" id="freeQ" data-bind="freeQ" value="${esc(ui.freeQ)}" placeholder="שם מכשיר או מספר צ׳"></div>${!isRole && kids(id).length ? '<div class="actions"><button class="btn primary" data-act="tab" data-v="sign">ניפוק מהמלאי החופשי</button></div>' : ''}</div>
   <section class="block"><h2>פריטי צ׳<small>לחיצה פותחת כרטיס פריט</small></h2>${tzs.length ? `<div class="tablewrap"><table><thead><tr><th>שם מכשיר</th><th>צ׳</th><th>תקופות הצפנה</th><th>שייכות</th><th>מצב</th></tr></thead><tbody>${tzs.map(t => `<tr class="click" data-act="detail" data-v="${esc(t.id)}"><td>${esc(skuName(t.sku))}</td><td>${tzNo(t.id)}</td><td>${periodsCell(t)}</td><td>${ownerCell(t)}</td><td>${pill(TZSTAT[t.status] || [t.status])}${t.pending ? ' <span class="pill warn">בתנועה</span>' : ''}</td></tr>`).join('')}</tbody></table></div>` : empty('אין פריטי צ׳ פנויים', '')}</section>
   <section class="block"><h2>לוג״ת</h2>${logat.length ? `<div class="tablewrap"><table><thead><tr><th>פריט</th><th>כמות במחסן</th><th>זמין לניפוק</th></tr></thead><tbody>${logat.map(l => `<tr><td>${esc(skuName(l.sku))}</td><td class="num">${l.qty}</td><td class="num">${avail(id, l.sku)}</td></tr>`).join('')}</tbody></table></div>` : empty('אין לוג״ת פנוי', '')}</section>`;
 }
@@ -990,7 +992,7 @@ function render() {
   if (!scopeIds.includes(ui.acting)) ui.acting = ME.member && scopeIds.includes(ME.member.unit) ? ME.member.unit : scopeIds[0];
   renderHeader();
   const a = document.activeElement, fid = a && a.id, s0 = a && a.selectionStart, s1 = a && a.selectionEnd;
-  const views = { overview: renderOverview, free: renderFree, moves: renderMoves, tzrep: renderTzReport, desc: renderDescriptor, loans: renderLoans, descs: renderDescs, unit: renderUnit, kits: renderKits, catalog: renderCatalog, vehicles: renderVehicles };
+  const views = { overview: renderOverview, free: renderFree, moves: () => renderMoves('list'), sign: () => renderMoves('form'), tzrep: renderTzReport, desc: renderDescriptor, loans: renderLoans, descs: renderDescs, unit: renderUnit, kits: renderKits, catalog: renderCatalog, vehicles: renderVehicles };
   main.innerHTML = `<h1 class="ptitle">${esc(ui.pageTitle || '')}</h1>` + (views[ui.tab] || renderOverview)();
   renderSheet();
   if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); try { if (s0 != null) el.setSelectionRange(s0, s1); } catch (e) {} } }
@@ -1070,6 +1072,7 @@ const H = {
   },
   addLine: () => { draft.lines.push({ sku: '', qty: '' }); render(); },
   delLine: v => { draft.lines.splice(+v, 1); render(); },
+  histMore: () => { ui.histN = (ui.histN || 30) + 30; render(); },
   dveh: v => { const i = draft.veh.indexOf(v); if (i < 0) draft.veh.push(v); else draft.veh.splice(i, 1); render(); },
   dtz: v => { const i = draft.tz.indexOf(v); if (i < 0) draft.tz.push(v); else { draft.tz.splice(i, 1); delete draft.kit[v]; } render(); },
   kitInc: v => { const [k, cid] = v.split('|'); const it = (draft.kit[k] || []).find(c => c.id === cid); if (it) it.inc = !it.inc; render(); },
@@ -1436,7 +1439,7 @@ function subscribe() {
   }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
 }
 /* ---------- auto-update: reload when a newer version is published ---------- */
-const BUILD = '20261031042234';
+const BUILD = '20261031060036';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
