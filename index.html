@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#132033">
-<title>מלאי חטיבתי</title>
+<title>תקשוב 55</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=Suez+One&display=swap">
 <style>
@@ -197,7 +197,7 @@ details.sku .rows div:last-child { border-bottom: 0; }
 <body>
 <div dir="rtl" lang="he">
   <header class="top"><div class="wrap top-in" id="top">
-    <div class="brandx"><span class="markx"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span><div><div class="b1">מלאי חטיבתי</div><div class="b2">טוען…</div></div></div>
+    <div class="brandx"><span class="markx"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span><div><div class="b1">תקשוב 55</div><div class="b2">טוען…</div></div></div>
   </div></header>
   <div id="drawer"></div>
   <main class="wrap" id="main">
@@ -221,7 +221,7 @@ const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 
 const S = {}; COLS.forEach(c => S[c] = {});
 const loaded = new Set();
 let db = null, busy = false;
-const ui = { rm: { reason: '', note: '', open: false }, rmL: {}, signMode: 'eq', veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+const ui = { crQ: {}, tzSku: '', rm: { reason: '', note: '', open: false }, rmL: {}, signMode: 'eq', veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
 let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [], veh: [] };
 const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
 try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
@@ -410,7 +410,7 @@ function renderDrawer() {
   const order = descU(viewRoot());
   const opts = order.map(id => `<option value="${esc(id)}" ${id === me() ? 'selected' : ''}>${'\u00A0\u00A0\u00A0'.repeat(depth(id))}${esc(nm(id))}</option>`).join('');
   el.innerHTML = `<div class="drawer-bg" data-act="menuClose"></div><nav class="drawer" aria-label="עמודים">
-    <div class="drawer-h"><b>${esc(rootNode().name)}</b><button class="xbtn" data-act="menuClose" aria-label="סגירה">×</button></div>
+    <div class="drawer-h"><b>תקשוב 55</b><button class="xbtn" data-act="menuClose" aria-label="סגירה">×</button></div>
     <div class="drawer-who"><span class="who">${esc(ME.name || '')}</span><span dir="ltr">${esc(ME.email)}</span><span>${isOwner() ? 'בעל המערכת' : esc(memberLabel(ME.member)) + ' · ' + esc(nm(ME.member.unit))}</span>${order.length > 1 ? `<label for="acting">צפייה ביחידה</label><select id="acting">${opts}</select>` : ''}</div>
     ${navTabs().map(([k, l, b]) => `<button class="navi" data-act="tab" data-v="${k}" ${ui.tab === k ? 'aria-current="page"' : ''}>${ICO[k] || ''}<span>${l}</span>${b ? `<span class="badge">${b}</span>` : ''}</button>`).join('')}
     <button class="navi out" data-act="logout">${SV('<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>')}<span>יציאה</span></button>
@@ -430,7 +430,7 @@ function renderHeader() {
   if (!tabs.some(t => t[0] === ui.tab)) ui.tab = 'overview';
   const alerts = tabs.reduce((x, t) => x + (+t[2] || 0), 0);
   cur = tabs.find(t => t[0] === ui.tab);
-  document.getElementById('top').innerHTML = `<div class="brandx"><span class="markx">${ICO.stock}</span><div style="min-width:0"><div class="b1">${esc(rootNode().name)} · מלאי</div><div class="b2">${esc(nm(me()))}${where(me()) ? ' · ' + esc(where(me())) : ''}</div></div></div>
+  document.getElementById('top').innerHTML = `<div class="brandx"><span class="markx">${ICO.stock}</span><div style="min-width:0"><div class="b1">תקשוב 55</div><div class="b2">${esc(nm(me()))}${where(me()) ? ' · ' + esc(where(me())) : ''}</div></div></div>
     <button class="burger" data-act="menu" aria-label="תפריט" aria-expanded="${menuOpen}">${alerts ? `<span class="badge">${alerts}</span>` : ''}<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h18"/><path d="M4 13h14"/><path d="M4 19h10"/></svg></button>`;
   ui.pageTitle = cur ? cur[1] : '';
   renderDrawer();
@@ -563,14 +563,44 @@ function recvState(m, key) {
   if (!ui.recv[m.id][key]) ui.recv[m.id][key] = ((m.kit || {})[key] || []).map(c => ({ ...c, got: !!c.inc }));
   return ui.recv[m.id][key];
 }
+/* ---------- credit (זיכוי) of a signed receipt back to the sender ---------- */
+function creditInfo(m) {
+  const out = { tz: [], lines: {}, veh: [], any: false };
+  if (!m || m.status !== 'signed' || !['issue', 'transfer'].includes(m.type) || m.from !== me() || !m.to || !canSignFor(me())) return out;
+  const cr = m.credited || {};
+  out.tz = (m.tz || []).filter(t => { const x = S.tz[t]; return x && !x.returned && x.holder === m.to && !x.pending && !(cr.tz || []).includes(t); });
+  (m.lines || []).forEach(l => { const left = l.qty - ((cr.lines || {})[l.sku] || 0); const q = Math.min(left, avail(m.to, l.sku)); if (q > 0) out.lines[l.sku] = q; });
+  out.veh = (m.veh || []).filter(v => S.nodes[v] && S.nodes[v].parent === m.to && !S.nodes[v].pending && !(cr.veh || []).includes(v));
+  out.any = !!(out.tz.length || Object.keys(out.lines).length || out.veh.length);
+  return out;
+}
+function creditCtl(m, ci, key) {
+  const cr = m.credited || {};
+  if (key.startsWith('L:')) {
+    const sku = key.slice(2), done = (cr.lines || {})[sku] || 0, max = ci.lines[sku];
+    return `${done ? `<span class="pill">זוכו ${done}</span>` : ''}${max ? `<span class="actions" style="display:inline-flex;gap:6px;align-items:center"><input type="number" min="1" max="${max}" aria-label="כמות לזיכוי" data-bind="crQ.${esc(m.id)}_${esc(sku)}" value="${esc(ui.crQ[m.id + '_' + sku] || max)}" style="width:70px"><button class="btn sm" data-act="creditOne" data-v="${esc(m.id)}|L|${esc(sku)}">זיכוי</button></span>` : ''}`;
+  }
+  if ((cr.tz || []).includes(key)) return '<span class="pill">זוכה</span>';
+  return ci.tz.includes(key) ? `<button class="btn sm" data-act="creditOne" data-v="${esc(m.id)}|tz|${esc(key)}">זיכוי</button>` : '';
+}
+async function doCredit(m, sel) {
+  const sg = currentSigner(), from = m.to, to = m.from;
+  for (const t of sel.tz) await patch('tz', t, { holder: to, since: now() });
+  for (const [sku, q] of Object.entries(sel.lines)) { await addQty(from, sku, -q); await addQty(to, sku, q); }
+  for (const v of sel.veh) await patch('nodes', v, { parent: to });
+  const cr = m.credited || {}, lines = { ...(cr.lines || {}) };
+  Object.entries(sel.lines).forEach(([k, q]) => { lines[k] = (lines[k] || 0) + q; });
+  await patch('moves', m.id, { credited: { tz: [...(cr.tz || []), ...sel.tz], lines, veh: [...(cr.veh || []), ...sel.veh] } });
+  await put('moves', uid('m'), { type: 'return', from, to, lines: Object.entries(sel.lines).map(([sku, qty]) => ({ sku, qty })), tz: sel.tz, veh: sel.veh, status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, createdBy: sg.label, note: 'זיכוי מקבלה', ref: m.id });
+}
 function renderReport(m) {
   const signing = m.status === 'pending' && m.to === me();
-  const keys = reportKeys(m);
-  const vehHtml = (m.veh || []).map(v => { const it = (m.vehItems || {})[v] || { tz: [], logat: [] }; const nd = S.nodes[v]; return `<div class="item"><div class="title">רכב <span class="num">${esc(nd?.number || v)}</span> · ${esc(nd?.vtype || '')}</div><div class="small">ציוד מותקן שעובר עם הרכב: ${[...it.tz.map(t => `${esc(skuName(S.tz[t]?.sku))} ${tzNo(t)}`), ...it.logat.map(x => `${esc(skuName(x.sku))} × ${x.qty}`)].join(' · ') || 'אין'}</div></div>`; }).join('');
+  const keys = reportKeys(m), ci = creditInfo(m), crOn = m.status === 'signed' && m.from === me() && ['issue', 'transfer'].includes(m.type);
+  const vehHtml = (m.veh || []).map(v => { const it = (m.vehItems || {})[v] || { tz: [], logat: [] }; const nd = S.nodes[v]; return `<div class="item"><div class="head"><div class="title">רכב <span class="num">${esc(nd?.number || v)}</span> · ${esc(nd?.vtype || '')}</div>${crOn ? ((m.credited?.veh || []).includes(v) ? '<span class="pill">זוכה</span>' : ci.veh.includes(v) ? `<button class="btn sm" data-act="creditOne" data-v="${esc(m.id)}|veh|${esc(v)}">זיכוי</button>` : '') : ''}</div><div class="small">ציוד מותקן שעובר עם הרכב: ${[...it.tz.map(t => `${esc(skuName(S.tz[t]?.sku))} ${tzNo(t)}`), ...it.logat.map(x => `${esc(skuName(x.sku))} × ${x.qty}`)].join(' · ') || 'אין'}</div></div>`; }).join('');
   const rowsHtml = keys.map(k => {
     const kit = k.kit || [];
     const recv = signing ? recvState(m, k.key) : ((m.kitRecv || {})[k.key] || null);
-    return `<div class="item"><div class="title">${k.title}</div>
+    return `<div class="item"><div class="head"><div class="title">${k.title}</div>${crOn ? `<div>${creditCtl(m, ci, k.key)}</div>` : ''}</div>
       ${kit.length ? `<div class="tablewrap" style="border:0"><table><thead><tr><th>אמצעי בקיט</th><th>כמות</th><th>נשלח</th><th>התקבל</th></tr></thead><tbody>${kit.map((c, i) => {
         const r = recv && recv[i];
         const got = signing ? `<input type="checkbox" id="rc_${safeId(k.key)}_${safeId(c.id)}" data-act="recvInc" data-v="${esc(m.id)}|${esc(k.key)}|${i}" ${r && r.got ? 'checked' : ''} aria-label="התקבל ${esc(c.name)}">` : r ? (r.got ? '<span class="pill good">כן</span>' : '<span class="pill crit">לא</span>') : '<span class="muted small">—</span>';
@@ -585,6 +615,7 @@ function renderReport(m) {
       ${m.signedAt ? `<dt>${m.status === 'rejected' ? 'נדחה' : 'נחתם'}</dt><dd>${fmtDT(m.signedAt)}${m.signedBy ? ' · ' + esc(m.signedBy) : ''}</dd>` : ''}<dt>סטטוס</dt><dd>${pill(MSTAT[m.status] || [m.status])}</dd>
       ${(m.kits || []).length ? `<dt>קיטים</dt><dd>${m.kits.map(k => esc(k.name) + ' × ' + k.count).join(', ')}</dd>` : ''}${m.note ? `<dt>הערה</dt><dd>${esc(m.note)}</dd>` : ''}</dl>
     ${m.kitShort ? `<div class="item sev-crit"><div class="small">בקבלה חסרו ${m.kitShort} אמצעים מתוך מה שנשלח. נפתח אירוע חריג.</div></div>` : ''}
+    ${crOn ? `<div class="card formgrid" style="background:var(--sunk)"><b>זיכוי</b><div class="small muted">מחזיר ציוד מהקבלה למחסן של ${esc(nm(m.from))}. אפשר לזכות את כל הקבלה או פריט מסוים.</div>${ci.any ? `<div class="actions"><button class="btn primary" data-act="creditAll" data-v="${esc(m.id)}">זיכוי כל הקבלה</button></div>` : `<div class="small">${m.credited ? 'הקבלה זוכתה.' : 'אין פריטים מהקבלה שאפשר לזכות כרגע (הם כבר לא אצל המקבל או בתנועה).'}</div>`}</div>` : ''}
     <div class="list">${vehHtml}${rowsHtml}</div>
     ${signing ? `<div class="card formgrid">${signerSel}<div class="small muted">סמן כל אמצעי שהתקבל בפועל. אמצעי שנשלח ולא סומן ייפתח כחוסר.</div><div class="actions"><button class="btn primary" data-act="sign" data-v="${esc(m.id)}">חתימה על הדוח וקבלת הציוד</button><button class="btn crit" data-act="reject" data-v="${esc(m.id)}">דחייה</button></div></div>` : ''}
   </div></div>`;
@@ -710,7 +741,14 @@ function renderMoves(mode = 'list') {
     <div class="field"><label for="dTarget">${draft.type === 'return' ? 'מוחזר אל' : 'נמסר אל'}</label><select id="dTarget" data-bind="draft.target"><option value="">בחר…</option>${targets.map(t => `<option value="${esc(t)}" ${draft.target === t ? 'selected' : ''}>${esc(nm(t))}</option>`).join('')}</select></div>
     ${ui.signMode === 'veh' ? (myVeh.length ? `<div class="field"><span class="lbl">רכבים (${draft.veh.length} נבחרו) · הציוד המותקן עובר יחד עם הרכב</span><div class="checks">${myVeh.map(v => `<label class="check"><input type="checkbox" id="dveh_${safeId(v.id)}" data-act="dveh" data-v="${esc(v.id)}" ${draft.veh.includes(v.id) ? 'checked' : ''}> <span class="num">${esc(v.number)}</span> ${esc(v.vtype || '')} <span class="small muted">${vehContents(v.id).length} פריטים מותקנים</span></label>`).join('')}</div></div>` : '<div class="field"><span class="lbl">רכבים</span><span class="small muted">אין רכבים זמינים במחסן שלך.</span></div>') : ''}
     <div class="field"><span class="lbl">ציוד לוג״ת</span>${myLogat.length ? `${lines}<div><button class="linkbtn" data-act="addLine">+ הוספת פריט לוג״ת</button></div>` : '<span class="small muted">אין עליך ציוד לוג״ת זמין.</span>'}</div>
-    <div class="field"><span class="lbl">ציוד צ׳ (${draft.tz.length} נבחרו)</span>${myTz.length ? `<div class="checks">${myTz.map(t => `<label class="check"><input type="checkbox" id="dtz_${esc(t.id)}" data-act="dtz" data-v="${esc(t.id)}" ${draft.tz.includes(t.id) ? 'checked' : ''}> ${tzNo(t.id)} <span class="small muted">${esc(skuName(t.sku))}</span></label>`).join('')}</div>` : '<span class="small muted">אין עליך פריטי צ׳ זמינים.</span>'}</div>
+    <div class="field"><span class="lbl">ציוד צ׳ (${draft.tz.length} נבחרו)</span>${myTz.length ? (() => {
+      const types = [...new Set(myTz.map(t => t.sku))].sort((a, b) => skuName(a).localeCompare(skuName(b), 'he'));
+      if (!types.includes(ui.tzSku)) ui.tzSku = '';
+      const ofType = myTz.filter(t => t.sku === ui.tzSku);
+      return `<div class="field"><label for="tzSku">איזה מכשיר מחתימים?</label><select id="tzSku" data-bind="tzSku"><option value="">בחר סוג מכשיר…</option>${types.map(k => `<option value="${esc(k)}" ${ui.tzSku === k ? 'selected' : ''}>${esc(skuName(k))} (${myTz.filter(t => t.sku === k).length} במלאי)</option>`).join('')}</select></div>
+      ${ui.tzSku ? `<div class="small muted">בחר את מספרי הצ׳ של ה${esc(skuName(ui.tzSku))} שמחתימים:</div><div class="checks">${ofType.map(t => `<label class="check"><input type="checkbox" id="dtz_${esc(t.id)}" data-act="dtz" data-v="${esc(t.id)}" ${draft.tz.includes(t.id) ? 'checked' : ''}> ${tzNo(t.id)}${t.serial ? ` <span class="small muted mono">${esc(t.serial)}</span>` : ''}</label>`).join('')}</div>` : ''}
+      ${draft.tz.length ? `<div class="small">נבחרו: ${draft.tz.filter(x => S.tz[x]).map(x => `<span class="pill acc">${esc(skuName(S.tz[x].sku))} ${esc(x)} <button class="linkbtn" data-act="dtz" data-v="${esc(x)}" aria-label="הסרת ${esc(x)}">×</button></span>`).join(' ')}</div>` : ''}`;
+    })() : '<span class="small muted">אין במחסן שלך פריטי צ׳ פנויים.</span>'}</div>
     ${bundleKits().length ? `<div class="field"><span class="lbl">ניפוק קיט</span><div class="toolbar"><div class="field"><label for="kpKit">קיט</label><select id="kpKit" data-bind="kitPick.kit"><option value="">בחר קיט…</option>${bundleKits().map(k => `<option value="${esc(k.id)}" ${ui.kitPick.kit === k.id ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select></div><div class="field" style="flex:0 1 100px"><label for="kpN">כמות</label><input type="number" min="1" id="kpN" data-bind="kitPick.n" value="${esc(ui.kitPick.n)}"></div></div>${ui.kitPick.kit && S.kits[ui.kitPick.kit] ? `<div class="small muted">כולל: ${S.kits[ui.kitPick.kit].items.filter(c => c.sku).map(c => esc(skuName(c.sku)) + ' × ' + c.qty).join(', ')}</div>` : ''}<div><button class="btn sm" data-act="addKitToDraft">הוספת הקיט לניפוק</button></div>${draft.kits.length ? `<div class="small">קיטים בניפוק: ${draft.kits.map(k => `<span class="pill acc">${esc(k.name)} × ${k.count}</span>`).join(' ')}</div>` : ''}</div>` : ''}
     ${renderKitPicks()}
     <div class="field"><label for="dNote">הערה (לא חובה)</label><input type="text" id="dNote" data-bind="draft.note" value="${esc(draft.note)}"></div>
@@ -733,7 +771,7 @@ function renderMoves(mode = 'list') {
   ${mode === 'form' ? `<section class="block"><h2>החתמה חדשה<small>פועל בתור ${esc(nm(id))}</small></h2>${form}</section>
   ${receive}` : ''}
   ${outgoing.length ? `<section class="block"><h2>שלחת וממתין לחתימה</h2><div class="list">${outgoing.map(m => moveItem(m, `<button class="btn sm" data-act="openReport" data-v="${m.id}">דוח</button><button class="btn sm" data-act="cancel" data-v="${m.id}">ביטול</button>`)).join('')}</div></section>` : ''}
-  ${mode === 'list' ? `<section class="block"><h2>כל הקבלות<small>${hist.length} קבלות · לחיצה על דוח פותחת את דוח ההחתמה</small></h2>${hist.length ? `<div class="list">${hist.slice(0, histN).map(m => moveItem(m, `<button class="btn sm" data-act="openReport" data-v="${m.id}">דוח</button>`)).join('')}</div>${hist.length > histN ? '<div class="actions"><button class="btn" data-act="histMore">הצגת קבלות נוספות</button></div>' : ''}` : empty('אין עדיין קבלות', 'קבלות נוצרות כשמחתימים, מקבלים או קולטים ציוד.')}</section>` : ''}`;
+  ${mode === 'list' ? `<section class="block"><h2>כל הקבלות<small>${hist.length} קבלות · לחיצה על דוח פותחת את דוח ההחתמה</small></h2>${hist.length ? `<div class="list">${hist.slice(0, histN).map(m => moveItem(m, `<button class="btn sm" data-act="openReport" data-v="${m.id}">דוח</button>${creditInfo(m).any ? `<button class="btn sm" data-act="openReport" data-v="${m.id}">זיכוי</button>` : ''}`)).join('')}</div>${hist.length > histN ? '<div class="actions"><button class="btn" data-act="histMore">הצגת קבלות נוספות</button></div>' : ''}` : empty('אין עדיין קבלות', 'קבלות נוצרות כשמחתימים, מקבלים או קולטים ציוד.')}</section>` : ''}`;
 }
 function renderReceive() {
   const skus = Object.values(S.skus).filter(s => s.kind === rcv.kind).sort((a, b) => a.name.localeCompare(b.name, 'he'));
@@ -1085,6 +1123,14 @@ const H = {
   },
   addLine: () => { draft.lines.push({ sku: '', qty: '' }); render(); },
   delLine: v => { draft.lines.splice(+v, 1); render(); },
+  creditAll: v => run(async () => { const m = S.moves[v], ci = creditInfo(m); if (!ci.any) fail('אין מה לזכות בקבלה הזו.'); await doCredit(m, { tz: ci.tz, lines: ci.lines, veh: ci.veh }); }, 'הקבלה זוכתה. הציוד חזר למחסן שלך.'),
+  creditOne: v => run(async () => {
+    const [mid, kind, ref] = v.split('|'); const m = S.moves[mid], ci = creditInfo(m); const sel = { tz: [], lines: {}, veh: [] };
+    if (kind === 'tz') { if (!ci.tz.includes(ref)) fail('אי אפשר לזכות את הפריט הזה כרגע.'); sel.tz = [ref]; }
+    else if (kind === 'veh') { if (!ci.veh.includes(ref)) fail('אי אפשר לזכות את הרכב הזה כרגע.'); sel.veh = [ref]; }
+    else { const max = ci.lines[ref] || 0; const q = parseInt(ui.crQ[mid + '_' + ref] || max, 10); if (!(q > 0)) fail('הזן כמות.'); if (q > max) fail(`אפשר לזכות עד ${max}.`); sel.lines = { [ref]: q }; delete ui.crQ[mid + '_' + ref]; }
+    await doCredit(m, sel);
+  }, 'זוכה. הפריט חזר למחסן שלך.'),
   rmOpen: () => { ui.rm = { reason: '', note: '', open: true }; render(); },
   rmCancel: () => { ui.rm = { reason: '', note: '', open: false }; render(); },
   rmTz: v => run(async () => {
@@ -1315,6 +1361,7 @@ function bind(el, rerender) {
   else if (a === 'kitPick') ui.kitPick[b] = val;
   else if (a === 'veh') ui.veh[b] = val;
   else if (a === 'rm') ui.rm[b] = val;
+  else if (a === 'crQ') ui.crQ[b] = val;
   else if (a === 'rmL') ui.rmL[b] = val;
   else if (a === 'vehAdd') { ui.vehAdd[b] = ui.vehAdd[b] || {}; ui.vehAdd[b][c] = val; }
   else if (a === 'vehL') { const o = ui.vehAdd[b] = ui.vehAdd[b] || {}; o.L = o.L || {}; o.L[c] = val; }
@@ -1345,14 +1392,14 @@ const CFG = window.APP_CONFIG || {};
 let authState = 'pending', fauth = null, unsubs = [];
 const ME = { email: '', name: '', owner: false, member: null };
 function gate(html) {
-  document.getElementById('top').innerHTML = `<div class="brandx"><span class="markx">${ICO.stock}</span><div style="min-width:0"><div class="b1">${esc(CFG.appName || 'מלאי חטיבתי')}</div><div class="b2">${esc(ME.email || '')}</div></div></div>${authState === 'in' || authState === 'nomember' ? '<button class="btn sm" data-act="logout">יציאה</button>' : ''}`;
+  document.getElementById('top').innerHTML = `<div class="brandx"><span class="markx">${ICO.stock}</span><div style="min-width:0"><div class="b1">תקשוב 55</div><div class="b2">${esc(ME.email || '')}</div></div></div>${authState === 'in' || authState === 'nomember' ? '<button class="btn sm" data-act="logout">יציאה</button>' : ''}`;
   document.getElementById('drawer').innerHTML = '';
   document.getElementById('main').innerHTML = html;
 }
 function renderGate() {
   if (authState === 'nocfg') return gate(empty('צריך לחבר את Firebase', 'ממלאים את הקובץ config.js לפי מדריך ההתקנה ומעלים אותו מחדש.'));
   if (authState === 'pending') return gate('<div class="skeleton">טוען…</div>');
-  if (authState === 'out') return gate(`<section class="block" style="max-width:440px;margin:24px auto 0;width:100%"><h1 class="ptitle">כניסה למערכת המלאי</h1>
+  if (authState === 'out') return gate(`<section class="block" style="max-width:440px;margin:24px auto 0;width:100%"><h1 class="ptitle">כניסה לתקשוב 55</h1>
     <div class="card formgrid"><button class="btn primary" style="justify-content:center;padding:12px" data-act="login">כניסה עם Google</button>
     <div class="small muted">הכניסה פתוחה רק למי שמנהל ההרשאות הוסיף לפי כתובת המייל שלו. אם הכניסה לא נפתחת, פתחו את הקישור ישירות בדפדפן (Chrome או Safari) ולא מתוך אפליקציה אחרת.</div></div></section>`);
   if (authState === 'nomember') return gate(`<section class="block" style="max-width:520px;margin:24px auto 0;width:100%"><h1 class="ptitle">החשבון עוד לא שויך ליחידה</h1>
@@ -1472,7 +1519,7 @@ function subscribe() {
   }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
 }
 /* ---------- auto-update: reload when a newer version is published ---------- */
-const BUILD = '20261031062156';
+const BUILD = '20261031062716';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });

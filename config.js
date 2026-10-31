@@ -20,5 +20,5 @@ window.APP_CONFIG = {
   ownerEmail: "kfirdaabul1@gmail.com",
 
   // השם שמופיע בכותרת לפני הכניסה
-  appName: "מלאי חטיבה 55"
+  appName: "תקשוב 55"
 };
