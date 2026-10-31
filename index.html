@@ -221,7 +221,7 @@ const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 
 const S = {}; COLS.forEach(c => S[c] = {});
 const loaded = new Set();
 let db = null, busy = false;
-const ui = { reg: { name: '', roleTitle: '', pn: '', unit: '' }, crQ: {}, tzSku: '', rm: { reason: '', note: '', open: false }, rmL: {}, signMode: 'eq', veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+const ui = { inPerson: null, sigData: null, ip: { name: '', pn: '' }, reg: { name: '', roleTitle: '', pn: '', unit: '' }, crQ: {}, tzSku: '', rm: { reason: '', note: '', open: false }, rmL: {}, signMode: 'eq', veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
 let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [], veh: [] };
 const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
 try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
@@ -520,9 +520,20 @@ function removeBlock(t) {
     <div class="field"><label for="rmNote">פירוט (לאן הועבר, מספר אסמכתא)</label><input type="text" id="rmNote" data-bind="rm.note" value="${esc(r.note)}"></div>
     <div class="actions"><button class="btn crit" data-act="rmTz" data-v="${esc(t.id)}">הוצאה מהמלאי</button><button class="btn" data-act="rmCancel">ביטול</button></div></div>`;
 }
+function setupSigPad() {
+  const c = document.getElementById('sigPad'); if (!c || !c.getContext) return;
+  const g = c.getContext('2d'); g.lineWidth = 3; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#132033';
+  if (ui.sigData) { const im = new Image(); im.onload = () => g.drawImage(im, 0, 0); im.src = ui.sigData; }
+  let drawing = false, any = false;
+  const pt = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; };
+  c.addEventListener('pointerdown', e => { drawing = true; any = true; c.setPointerCapture(e.pointerId); const [x, y] = pt(e); g.beginPath(); g.moveTo(x, y); e.preventDefault(); });
+  c.addEventListener('pointermove', e => { if (!drawing) return; const [x, y] = pt(e); g.lineTo(x, y); g.stroke(); e.preventDefault(); });
+  const end = () => { if (!drawing) return; drawing = false; if (any) ui.sigData = c.toDataURL('image/png'); };
+  c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
+}
 function renderSheet() {
   const box = document.getElementById('sheet');
-  if (ui.report && S.moves[ui.report]) { box.innerHTML = renderReport(S.moves[ui.report]); return; }
+  if (ui.report && S.moves[ui.report]) { box.innerHTML = renderReport(S.moves[ui.report]); setupSigPad(); return; }
   const t = ui.detail && S.tz[ui.detail];
   if (!t) { box.innerHTML = ''; return; }
   const hist = Object.values(S.moves).filter(m => (m.tz || []).includes(t.id)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
@@ -594,7 +605,8 @@ async function doCredit(m, sel) {
   await put('moves', uid('m'), { type: 'return', from, to, lines: Object.entries(sel.lines).map(([sku, qty]) => ({ sku, qty })), tz: sel.tz, veh: sel.veh, status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, createdBy: sg.label, note: 'זיכוי מקבלה', ref: m.id });
 }
 function renderReport(m) {
-  const signing = m.status === 'pending' && m.to === me();
+  const ipMode = ui.inPerson === m.id && m.status === 'pending' && m.from === me() && !!currentSigner(false);
+  const signing = (m.status === 'pending' && m.to === me()) || ipMode;
   const keys = reportKeys(m), ci = creditInfo(m), crOn = m.status === 'signed' && m.from === me() && ['issue', 'transfer'].includes(m.type);
   const vehHtml = (m.veh || []).map(v => { const it = (m.vehItems || {})[v] || { tz: [], logat: [] }; const nd = S.nodes[v]; return `<div class="item"><div class="head"><div class="title">רכב <span class="num">${esc(nd?.number || v)}</span> · ${esc(nd?.vtype || '')}</div>${crOn ? ((m.credited?.veh || []).includes(v) ? '<span class="pill">זוכה</span>' : ci.veh.includes(v) ? `<button class="btn sm" data-act="creditOne" data-v="${esc(m.id)}|veh|${esc(v)}">זיכוי</button>` : '') : ''}</div><div class="small">ציוד מותקן שעובר עם הרכב: ${[...it.tz.map(t => `${esc(skuName(S.tz[t]?.sku))} ${tzNo(t)}`), ...it.logat.map(x => `${esc(skuName(x.sku))} × ${x.qty}`)].join(' · ') || 'אין'}</div></div>`; }).join('');
   const rowsHtml = keys.map(k => {
@@ -608,16 +620,18 @@ function renderReport(m) {
       }).join('')}</tbody></table></div>` : '<div class="small muted">פריט ללא קיט</div>'}</div>`;
   }).join('');
   const n = S.nodes[me()];
-  const signerSel = signing ? signerBar() : '';
+  const signerSel = ipMode ? `<div class="scope">חתימה במקום: <b>המקבל מ${esc(nm(m.to))}</b> חותם במכשיר שלך.</div><div class="field"><label for="ipName">שם החותם</label><input type="text" id="ipName" data-bind="ip.name" value="${esc(ui.ip.name)}"></div><div class="field"><label for="ipPn">מספר אישי</label><input type="text" id="ipPn" inputmode="numeric" data-bind="ip.pn" value="${esc(ui.ip.pn)}"></div><div class="field"><span class="lbl">חתימה</span><canvas id="sigPad" width="600" height="200" style="width:100%;height:150px;background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none" aria-label="משטח חתימה"></canvas><div><button class="linkbtn" data-act="sigClear">ניקוי החתימה</button></div></div>` : signing ? signerBar() : '';
   return `<div class="sheet-bg" data-act="closeSheet" data-v="bg"><div class="sheet" role="dialog" aria-modal="true" aria-label="דוח החתמה">
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2 style="font-size:18px">דוח החתמה · ${MTYPE[m.type] || m.type}</h2><button class="btn sm" data-act="closeSheet">סגירה</button></div>
     <dl class="kv"><dt>מוסר</dt><dd>${m.from ? esc(fullName(m.from)) : esc(m.fromExt || 'ספק / מחסן חיצוני')}</dd><dt>מקבל</dt><dd>${m.to ? esc(fullName(m.to)) : esc(m.toExt || 'גורם חיצוני')}</dd><dt>נשלח</dt><dd>${fmtDT(m.createdAt)}${m.createdBy ? ' · ' + esc(m.createdBy) : ''}</dd>
       ${m.signedAt ? `<dt>${m.status === 'rejected' ? 'נדחה' : 'נחתם'}</dt><dd>${fmtDT(m.signedAt)}${m.signedBy ? ' · ' + esc(m.signedBy) : ''}</dd>` : ''}<dt>סטטוס</dt><dd>${pill(MSTAT[m.status] || [m.status])}</dd>
+      ${m.inPerson ? `<dt>חתימת המקבל</dt><dd>${esc(m.inPerson.name)}${m.inPerson.pn ? ' · מ״א ' + esc(m.inPerson.pn) : ''}<div class="small muted">נחתם במכשיר של ${esc(m.inPerson.host)}</div>${m.inPerson.sig ? `<img src="${esc(m.inPerson.sig)}" alt="חתימת המקבל" style="max-width:240px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-top:4px">` : ''}</dd>` : ''}
       ${(m.kits || []).length ? `<dt>קיטים</dt><dd>${m.kits.map(k => esc(k.name) + ' × ' + k.count).join(', ')}</dd>` : ''}${m.note ? `<dt>הערה</dt><dd>${esc(m.note)}</dd>` : ''}</dl>
     ${m.kitShort ? `<div class="item sev-crit"><div class="small">בקבלה חסרו ${m.kitShort} אמצעים מתוך מה שנשלח. נפתח אירוע חריג.</div></div>` : ''}
     ${crOn ? `<div class="card formgrid" style="background:var(--sunk)"><b>זיכוי</b><div class="small muted">מחזיר ציוד מהקבלה למחסן של ${esc(nm(m.from))}. אפשר לזכות את כל הקבלה או פריט מסוים.</div>${ci.any ? `<div class="actions"><button class="btn primary" data-act="creditAll" data-v="${esc(m.id)}">זיכוי כל הקבלה</button></div>` : `<div class="small">${m.credited ? 'הקבלה זוכתה.' : 'אין פריטים מהקבלה שאפשר לזכות כרגע (הם כבר לא אצל המקבל או בתנועה).'}</div>`}</div>` : ''}
+    ${m.status === 'pending' && m.from === me() && !ipMode && currentSigner(false) ? `<div class="card formgrid" style="background:var(--sunk)"><b>המקבל נמצא לידך?</b><div class="small muted">אפשר שהמקבל יחתום עכשיו במכשיר שלך, בלי להיכנס לאפליקציה. החתימה, השם והמספר האישי נשמרים בקבלה.</div><div class="actions"><button class="btn primary" data-act="ipStart" data-v="${esc(m.id)}">חתימת המקבל במכשיר שלי</button></div></div>` : ''}
     <div class="list">${vehHtml}${rowsHtml}</div>
-    ${signing ? `<div class="card formgrid">${signerSel}<div class="small muted">סמן כל אמצעי שהתקבל בפועל. אמצעי שנשלח ולא סומן ייפתח כחוסר.</div><div class="actions"><button class="btn primary" data-act="sign" data-v="${esc(m.id)}">חתימה על הדוח וקבלת הציוד</button><button class="btn crit" data-act="reject" data-v="${esc(m.id)}">דחייה</button></div></div>` : ''}
+    ${signing ? `<div class="card formgrid">${signerSel}<div class="small muted">סמן כל אמצעי שהתקבל בפועל. אמצעי שנשלח ולא סומן ייפתח כחוסר.</div><div class="actions"><button class="btn primary" data-act="sign" data-v="${esc(m.id)}">${ipMode ? 'חתימת המקבל וקבלת הציוד' : 'חתימה על הדוח וקבלת הציוד'}</button>${ipMode ? '<button class="btn" data-act="ipStop">חזרה</button>' : `<button class="btn crit" data-act="reject" data-v="${esc(m.id)}">דחייה</button>`}</div></div>` : ''}
   </div></div>`;
 }
 
@@ -770,7 +784,7 @@ function renderMoves(mode = 'list') {
   </div></section>` : ''}
   ${mode === 'form' ? `<section class="block"><h2>החתמה חדשה<small>פועל בתור ${esc(nm(id))}</small></h2>${form}</section>
   ${receive}` : ''}
-  ${outgoing.length ? `<section class="block"><h2>שלחת וממתין לחתימה</h2><div class="list">${outgoing.map(m => moveItem(m, `<button class="btn sm" data-act="openReport" data-v="${m.id}">דוח</button><button class="btn sm" data-act="cancel" data-v="${m.id}">ביטול</button>`)).join('')}</div></section>` : ''}
+  ${outgoing.length ? `<section class="block"><h2>שלחת וממתין לחתימה</h2><div class="list">${outgoing.map(m => moveItem(m, `${m.status === 'pending' ? `<button class="btn sm primary" data-act="ipStart" data-v="${m.id}">חתימה אצלי</button>` : ''}<button class="btn sm" data-act="openReport" data-v="${m.id}">דוח</button><button class="btn sm" data-act="cancel" data-v="${m.id}">ביטול</button>`)).join('')}</div></section>` : ''}
   ${mode === 'list' ? `<section class="block"><h2>כל הקבלות<small>${hist.length} קבלות · לחיצה על דוח פותחת את דוח ההחתמה</small></h2>${hist.length ? `<div class="list">${hist.slice(0, histN).map(m => moveItem(m, `<button class="btn sm" data-act="openReport" data-v="${m.id}">דוח</button>${creditInfo(m).any ? `<button class="btn sm" data-act="openReport" data-v="${m.id}">זיכוי</button>` : ''}`)).join('')}</div>${hist.length > histN ? '<div class="actions"><button class="btn" data-act="histMore">הצגת קבלות נוספות</button></div>' : ''}` : empty('אין עדיין קבלות', 'קבלות נוצרות כשמחתימים, מקבלים או קולטים ציוד.')}</section>` : ''}`;
 }
 function renderReceive() {
@@ -1060,7 +1074,7 @@ const H = {
   permSel: v => { ui.permUnit = v; ui.addM.unit = v; render(); },
   gotoPerm: v => { const owner = permOwner(v); H.goto(owner); ui.permUnit = v; H.tab('unit'); },
   detail: v => { ui.rm = { reason: '', note: '', open: false }; ui.detail = v; renderSheet(); },
-  closeSheet: (v, el, e) => { if (v === 'bg' && e.target !== el) return; ui.detail = null; ui.report = null; renderSheet(); },
+  closeSheet: (v, el, e) => { if (v === 'bg' && e.target !== el) return; ui.detail = null; ui.report = null; ui.inPerson = null; renderSheet(); },
   dtype: v => { draft.type = v; draft.target = ''; render(); },
   vehNew: () => run(async () => {
     const id = me(); currentSigner();
@@ -1124,6 +1138,9 @@ const H = {
   },
   addLine: () => { draft.lines.push({ sku: '', qty: '' }); render(); },
   delLine: v => { draft.lines.splice(+v, 1); render(); },
+  ipStart: v => { ui.inPerson = v; ui.sigData = null; ui.ip = { name: '', pn: '' }; ui.report = v; renderSheet(); },
+  ipStop: () => { ui.inPerson = null; renderSheet(); },
+  sigClear: () => { ui.sigData = null; renderSheet(); },
   register: () => run(async () => {
     const f = ui.reg, name = f.name.trim(), unit = f.unit;
     if (!name) fail('הזן שם מלא.'); if (!unit || !regNodes[unit]) fail('בחר יחידה.');
@@ -1255,7 +1272,14 @@ const H = {
   }, 'נשלח. הציוד יעבור אחרי חתימת המקבל.'),
   sign: v => run(async () => {
     const m = S.moves[v]; if (!m || m.status !== 'pending') fail('התנועה כבר טופלה.');
-    const sg = currentSigner();
+    const inPerson = ui.inPerson === v && m.from === me();
+    let sg, extra = {};
+    if (inPerson) {
+      const host = currentSigner(); const p = ui.ip;
+      if (!p.name.trim()) fail('הזן את שם החותם.'); if (p.pn && !/^\d{5,9}$/.test(p.pn.trim())) fail('מספר אישי צריך להכיל 5 עד 9 ספרות.'); if (!ui.sigData) fail('המקבל צריך לחתום במסגרת החתימה.');
+      sg = { label: `${p.name.trim()}${p.pn.trim() ? ' (מ״א ' + p.pn.trim() + ')' : ''} · נחתם במכשיר של ${host.label}` };
+      extra = { inPerson: { name: p.name.trim(), pn: p.pn.trim(), sig: ui.sigData, host: host.label, hostEmail: ME.email } };
+    } else sg = currentSigner();
     const kitRecv = {}; let short = []; 
     for (const key of Object.keys(m.kit || {})) { const st = recvState(m, key); kitRecv[key] = st.map(c => ({ id: c.id, name: c.name, qty: c.qty, inc: !!c.inc, got: !!c.got })); st.forEach(c => { if (c.inc && !c.got) short.push(`${key.startsWith('L:') ? skuName(key.slice(2)) : 'צ׳ ' + key}: ${c.name}`); }); }
     for (const l of m.lines || []) { await addQty(m.from, l.sku, -l.qty); }
@@ -1266,7 +1290,8 @@ const H = {
       if (kitRecv[t]) upd.kit = { items: kitRecv[t].map(c => ({ id: c.id, name: c.name, qty: c.qty, have: c.got })), at: now() };
       await patch('tz', t, upd);
     }
-    await patch('moves', v, { status: 'signed', signedAt: now(), signedBy: sg.label, kitRecv, kitShort: short.length });
+    await patch('moves', v, { status: 'signed', signedAt: now(), signedBy: sg.label, kitRecv, kitShort: short.length, ...extra });
+    ui.inPerson = null; ui.sigData = null; ui.ip = { name: '', pn: '' };
     if (short.length) await put('incidents', uid('i'), { type: 'kit', tz: (m.tz || []).find(t => kitRecv[t] && kitRecv[t].some(c => c.inc && !c.got)) || null, holder: m.to, status: 'open', note: 'חסרו בקבלה: ' + short.join(', '), createdAt: now() });
     ui.report = null; delete ui.recv[v];
     toast(short.length ? `נחתם עם ${short.length} חוסרים בקיט. נפתח אירוע חריג.` : 'נחתם. הציוד רשום עכשיו על ' + nm(m.to) + '.');
@@ -1385,6 +1410,7 @@ function bind(el, rerender) {
   else if (a === 'rm') ui.rm[b] = val;
   else if (a === 'crQ') ui.crQ[b] = val;
   else if (a === 'reg') ui.reg[b] = val;
+  else if (a === 'ip') ui.ip[b] = val;
   else if (a === 'rmL') ui.rmL[b] = val;
   else if (a === 'vehAdd') { ui.vehAdd[b] = ui.vehAdd[b] || {}; ui.vehAdd[b][c] = val; }
   else if (a === 'vehL') { const o = ui.vehAdd[b] = ui.vehAdd[b] || {}; o.L = o.L || {}; o.L[c] = val; }
@@ -1558,7 +1584,7 @@ function subscribe() {
   }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
 }
 /* ---------- auto-update: reload when a newer version is published ---------- */
-const BUILD = '20261031114547';
+const BUILD = '20261031123520';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
