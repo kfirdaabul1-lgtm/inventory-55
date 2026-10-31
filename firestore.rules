@@ -31,10 +31,14 @@ service cloud.firestore {
     }
 
     // מבנה היחידות: רק מנהל חטיבתי. מנהל גדודי יכול להוסיף בעלי תפקיד בגדוד שלו.
+    // רכבים הם רשומות ביחידות (level == 'vehicle'): מורשה חתימה יוצר, מחתים ומוחק אותם.
     match /nodes/{id} {
       allow read: if anyUser();
-      allow create: if brigadeAdmin() || (battalionAdmin() && request.resource.data.level == 'role' && request.resource.data.get('top', '') == m().top);
-      allow update, delete: if brigadeAdmin();
+      allow create: if brigadeAdmin()
+        || (battalionAdmin() && request.resource.data.level == 'role' && request.resource.data.get('top', '') == m().top)
+        || (signer() && request.resource.data.level == 'vehicle');
+      allow update: if brigadeAdmin() || (signer() && resource.data.level == 'vehicle' && request.resource.data.level == 'vehicle');
+      allow delete: if brigadeAdmin() || (signer() && resource.data.level == 'vehicle');
     }
 
     match /skus/{id}  { allow read: if anyUser(); allow write: if brigadeAdmin() || receiver(); }

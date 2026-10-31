@@ -221,8 +221,8 @@ const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 
 const S = {}; COLS.forEach(c => S[c] = {});
 const loaded = new Set();
 let db = null, busy = false;
-const ui = { kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
-let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [] };
+const ui = { veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [], veh: [] };
 const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
 try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
 
@@ -238,8 +238,8 @@ const fmtDT = s => { if (!s) return '—'; const d = new Date(s); return `${fmtD
 const now = () => new Date().toISOString();
 const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-const LEVEL = { brigade: 'חטיבה', battalion: 'יחידה', company: 'פלוגה / חפ״ק', role: 'בעל תפקיד' };
-const MTYPE = { receive: 'קליטה', issue: 'ניפוק', return: 'זיכוי', transfer: 'העברה', loan: 'השאלה מיחידה', loanret: 'החזרת השאלה' };
+const LEVEL = { brigade: 'חטיבה', battalion: 'יחידה', company: 'פלוגה / חפ״ק', role: 'בעל תפקיד', vehicle: 'רכב' };
+const MTYPE = { install: 'התקנה ברכב', uninstall: 'פירוק מרכב', receive: 'קליטה', issue: 'ניפוק', return: 'זיכוי', transfer: 'העברה', loan: 'השאלה מיחידה', loanret: 'החזרת השאלה' };
 const MSTAT = { awaiting: ['ממתין לאישור דרג', 'warn'], pending: ['ממתין לחתימה', 'warn'], signed: ['נחתם', 'good'], rejected: ['נדחה', 'crit'], cancelled: ['בוטל', ''] };
 const TZSTAT = { ok: ['תקין', 'good'], repair: ['בתיקון', 'warn'], disabled: ['מושבת', ''], lost: ['אבד', 'crit'] };
 const ANS = { here: ['נמצא אצלי', 'good'], missing: ['לא נמצא', 'crit'], repair: ['בתיקון / הועבר', 'warn'] };
@@ -247,8 +247,12 @@ const INC = { open: ['פתוח', 'crit'], investigating: ['בבירור', 'warn'
 const INCTYPE = { missing: 'פריט צ׳ סומן "לא נמצא"', unconfirmed: 'לא התקבל אישור שבועי', count: 'פער בספירה', kit: 'חוסר בתכולת קיט' };
 
 const nodesArr = () => Object.values(S.nodes);
-const kids = id => nodesArr().filter(n => n.parent === id).sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, 'he'));
-const desc = id => { const out = [id]; for (let i = 0; i < out.length; i++) kids(out[i]).forEach(k => out.push(k.id)); return out; };
+const isVeh = id => S.nodes[id]?.level === 'vehicle';
+const atUnit = h => isVeh(h) ? S.nodes[h].parent : h;
+const vkids = id => nodesArr().filter(n => n.parent === id && n.level === 'vehicle').sort((a, b) => (a.number || '').localeCompare(b.number || '', 'he'));
+const kids = id => nodesArr().filter(n => n.parent === id && n.level !== 'vehicle').sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, 'he'));
+const descU = id => { const out = [id]; for (let i = 0; i < out.length; i++) kids(out[i]).forEach(k => out.push(k.id)); return out; };
+const desc = id => { const u = descU(id); return [...u, ...u.flatMap(x => vkids(x).map(v => v.id))]; };
 const rootNode = () => nodesArr().find(n => !n.parent);
 const nm = id => { const n = S.nodes[id]; if (!n) return '—'; return n.level === 'role' && n.person ? `${n.name} · ${n.person}` : n.name; };
 const where = id => { const n = S.nodes[id]; if (!n) return ''; const p = []; let x = S.nodes[n.parent]; while (x && x.level !== 'brigade') { p.unshift(x.name); x = S.nodes[x.parent]; } return p.join(' / '); };
@@ -364,6 +368,7 @@ const empty = (b, t) => `<div class="empty"><b>${esc(b)}</b>${esc(t || '')}</div
 function moveSummary(m) {
   const parts = (m.lines || []).map(l => `${esc(skuName(l.sku))} × <span class="num">${l.qty}</span>`);
   (m.tz || []).forEach(t => parts.push(`${esc(skuName(S.tz[t]?.sku))} ${tzNo(t)}`));
+  (m.veh || []).forEach(v => parts.unshift(`<b>רכב ${esc(S.nodes[v]?.name || v)}</b>`));
   return parts.join(' · ') || '—';
 }
 function moveItem(m, actions = '') {
@@ -387,6 +392,7 @@ const ICO = {
   moves: SV('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
   weekly: SV('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/>'),
   incidents: SV('<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/>'),
+  vehicles: SV('<path d="M3 15V9l2-4h11l3 4h2v6"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/><path d="M9 16h6M5 9h14"/>'),
   catalog: SV('<path d="M4 5h16M4 10h16M4 15h10M4 20h7"/><path d="M17 15v6M14 18h6"/>'),
   kits: SV('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
   free: SV('<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'),
@@ -400,7 +406,7 @@ let menuOpen = false;
 function renderDrawer() {
   const el = document.getElementById('drawer');
   if (!menuOpen) { el.innerHTML = ''; return; }
-  const order = desc(viewRoot());
+  const order = descU(viewRoot());
   const opts = order.map(id => `<option value="${esc(id)}" ${id === me() ? 'selected' : ''}>${'\u00A0\u00A0\u00A0'.repeat(depth(id))}${esc(nm(id))}</option>`).join('');
   el.innerHTML = `<div class="drawer-bg" data-act="menuClose"></div><nav class="drawer" aria-label="עמודים">
     <div class="drawer-h"><b>${esc(rootNode().name)}</b><button class="xbtn" data-act="menuClose" aria-label="סגירה">×</button></div>
@@ -413,6 +419,7 @@ function navTabs() {
   const c = counts();
   const t = [['overview', 'דף ראשי', c.inc], ['free', 'מלאי חופשי', 0], ['moves', 'קבלות', c.toSign], ['tzrep', 'דוח צ׳', c.myOpen], ['desc', 'מתאר ציוד', 0]];
   if (!S.nodes[me()].parent) t.push(['loans', 'השאלות מיחידות', c.loansDue], ['descs', 'מתארים', 0], ...(canCatalog() ? [['catalog', 'קטלוג ציוד', 0]] : []), ['kits', 'קיטים', 0]);
+  if (['brigade', 'battalion'].includes(S.nodes[me()].level) || vkids(me()).length || nodesArr().some(v => v.level === 'vehicle' && descU(me()).includes(v.parent))) t.push(['vehicles', 'רכבים', 0]);
   if (hasPermPage(me())) t.push(['unit', 'הרשאות', permScope().filter(u => !MEM().some(m => m.active && m.canSign && m.unit === u)).length]);
   return t;
 }
@@ -430,7 +437,7 @@ function renderHeader() {
 function counts() {
   const id = me(), sc = new Set(desc(id));
   const toSign = Object.values(S.moves).filter(m => (m.status === 'pending' && m.to === id) || (m.status === 'awaiting' && m.approver === id)).length;
-  const myOpen = liveTz().filter(t => t.holder === id && activeTz(t) && !confirmOf(t)).length;
+  const myOpen = liveTz().filter(t => atUnit(t.holder) === id && activeTz(t) && !confirmOf(t)).length;
   const inc = Object.values(S.incidents).filter(i => sc.has(i.holder) && (i.status === 'open' || i.status === 'investigating')).length;
   const loansDue = S.nodes[id].parent ? 0 : Object.values(S.loans).filter(l => l.status === 'active' && daysTo(l.due) <= 7).length;
   return { toSign, myOpen, inc, loansDue };
@@ -546,6 +553,7 @@ function recvState(m, key) {
 function renderReport(m) {
   const signing = m.status === 'pending' && m.to === me();
   const keys = reportKeys(m);
+  const vehHtml = (m.veh || []).map(v => { const it = (m.vehItems || {})[v] || { tz: [], logat: [] }; const nd = S.nodes[v]; return `<div class="item"><div class="title">רכב <span class="num">${esc(nd?.number || v)}</span> · ${esc(nd?.vtype || '')}</div><div class="small">ציוד מותקן שעובר עם הרכב: ${[...it.tz.map(t => `${esc(skuName(S.tz[t]?.sku))} ${tzNo(t)}`), ...it.logat.map(x => `${esc(skuName(x.sku))} × ${x.qty}`)].join(' · ') || 'אין'}</div></div>`; }).join('');
   const rowsHtml = keys.map(k => {
     const kit = k.kit || [];
     const recv = signing ? recvState(m, k.key) : ((m.kitRecv || {})[k.key] || null);
@@ -564,7 +572,7 @@ function renderReport(m) {
       ${m.signedAt ? `<dt>${m.status === 'rejected' ? 'נדחה' : 'נחתם'}</dt><dd>${fmtDT(m.signedAt)}${m.signedBy ? ' · ' + esc(m.signedBy) : ''}</dd>` : ''}<dt>סטטוס</dt><dd>${pill(MSTAT[m.status] || [m.status])}</dd>
       ${(m.kits || []).length ? `<dt>קיטים</dt><dd>${m.kits.map(k => esc(k.name) + ' × ' + k.count).join(', ')}</dd>` : ''}${m.note ? `<dt>הערה</dt><dd>${esc(m.note)}</dd>` : ''}</dl>
     ${m.kitShort ? `<div class="item sev-crit"><div class="small">בקבלה חסרו ${m.kitShort} אמצעים מתוך מה שנשלח. נפתח אירוע חריג.</div></div>` : ''}
-    <div class="list">${rowsHtml}</div>
+    <div class="list">${vehHtml}${rowsHtml}</div>
     ${signing ? `<div class="card formgrid">${signerSel}<div class="small muted">סמן כל אמצעי שהתקבל בפועל. אמצעי שנשלח ולא סומן ייפתח כחוסר.</div><div class="actions"><button class="btn primary" data-act="sign" data-v="${esc(m.id)}">חתימה על הדוח וקבלת הציוד</button><button class="btn crit" data-act="reject" data-v="${esc(m.id)}">דחייה</button></div></div>` : ''}
   </div></div>`;
 }
@@ -581,7 +589,7 @@ function renderCatalog() {
     ${list.length ? `<div class="tablewrap"><table><thead><tr><th>שם</th><th>${kind === 'tz' ? 'פריטי צ׳ במערכת' : 'כמות במערכת'}</th>${edit ? '<th></th>' : ''}</tr></thead><tbody>${list.map(x => { const u = skuUse(x.id), used = u.qty > 0 || u.tz > 0 || u.kit, ed = ui.catName[x.id] !== undefined;
       return `<tr><td>${ed ? `<input type="text" aria-label="שם חדש" data-bind="catName.${esc(x.id)}" value="${esc(ui.catName[x.id])}" style="min-width:140px">` : esc(x.name)}${u.kit ? ' <span class="pill acc">קיט</span>' : ''}</td><td class="num">${kind === 'tz' ? u.tz : u.qty}</td>${edit ? `<td><div class="actions" style="flex-wrap:nowrap">${ed ? `<button class="btn sm primary" data-act="catRename" data-v="${esc(x.id)}">שמירה</button><button class="btn sm" data-act="catEditX" data-v="${esc(x.id)}">ביטול</button>` : ui.catDel === x.id ? `<button class="btn sm crit" data-act="catDel" data-v="${esc(x.id)}">כן, למחוק</button><button class="btn sm" data-act="catDelX">ביטול</button>` : `<button class="btn sm" data-act="catEdit" data-v="${esc(x.id)}">שינוי שם</button>${used ? `<span class="small muted">בשימוש</span>` : `<button class="btn sm crit" data-act="catDelArm" data-v="${esc(x.id)}">מחיקה</button>`}`}</div></td>` : ''}</tr>`; }).join('')}</tbody></table></div>` : empty('אין עדיין פריטים', 'מוסיפים פריטים בטופס למטה.')}</section>`;
   };
-  const units = desc(root.id).filter(u => S.nodes[u]);
+  const units = descU(root.id).filter(u => S.nodes[u]);
   if (!units.includes(c.unit)) c.unit = root.id;
   const logat = Object.values(S.skus).filter(x => x.kind !== 'tz').sort((a, b) => a.name.localeCompare(b.name, 'he'));
   return `<div class="scope">הקטלוג הוא רשימת סוגי הציוד שמופיעה בכל המערכת: בקליטה, בניפוק ובמתארים.</div>
@@ -597,6 +605,32 @@ function renderCatalog() {
     <div class="field"><label for="catLines">פריטים וכמויות</label><textarea id="catLines" rows="8" data-bind="cat.lines" placeholder="אלונקה, 12&#10;שק שינה, 140&#10;פנס ראש, 60">${esc(c.lines)}</textarea></div>
     ${logat.length ? `<div class="small muted">בקטלוג: ${logat.map(x => esc(x.name)).join(' · ')}</div>` : ''}
     <div class="actions"><button class="btn primary" data-act="catOpen">הזנת המלאי</button></div></div></section>` : ''}`;
+}
+
+/* ---------- vehicles ---------- */
+const vehTz = v => liveTz().filter(t => t.holder === v).sort((a, b) => skuName(a.sku).localeCompare(skuName(b.sku), 'he') || a.id.localeCompare(b.id));
+const vehContents = v => [...vehTz(v).map(t => `${esc(skuName(t.sku))} ${tzNo(t.id)}`), ...holdings(v).map(x => `${esc(skuName(x.sku))} × <span class="num">${x.qty}</span>`)];
+function renderVehicles() {
+  const id = me(), scope = new Set(descU(id));
+  const list = nodesArr().filter(v => v.level === 'vehicle' && scope.has(v.parent)).sort((a, b) => (a.number || '').localeCompare(b.number || '', 'he'));
+  const canAct = !!currentSigner(false);
+  const types = [...new Set(nodesArr().filter(v => v.level === 'vehicle').map(v => v.vtype).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'he'));
+  const myTz = liveTz().filter(t => t.holder === id && !t.pending && activeTz(t)).sort((a, b) => skuName(a.sku).localeCompare(skuName(b.sku), 'he') || a.id.localeCompare(b.id));
+  const myLogat = holdings(id).filter(x => S.skus[x.sku]?.kind !== 'tz' && avail(id, x.sku) > 0);
+  const card = v => {
+    const here = v.parent === id, edit = here && canAct && !v.pending, a = ui.vehAdd[v.id] || {};
+    const tzs = vehTz(v.id), lg = holdings(v.id);
+    return `<div class="card formgrid"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><h3 style="font-size:16px"><span class="num">${esc(v.number)}</span> · ${esc(v.vtype || 'רכב')}</h3><div class="small muted">${here ? 'במחסן של ' + esc(nm(id)) : 'מוחתם ל' + esc(nm(v.parent))}${v.pending ? ' · <span class="pill warn">בתנועה</span>' : ''}</div></div>${edit && !tzs.length && !lg.length ? `<button class="btn sm crit" data-act="vehDel" data-v="${esc(v.id)}">מחיקת רכב</button>` : ''}</div>
+      ${tzs.length || lg.length ? `<div class="tablewrap"><table><thead><tr><th>ציוד מותקן</th><th>צ׳ / כמות</th>${edit ? '<th></th>' : ''}</tr></thead><tbody>${tzs.map(t => `<tr><td>${esc(skuName(t.sku))}</td><td>${tzNo(t.id)}</td>${edit ? `<td><button class="btn sm" data-act="vehOut" data-v="${esc(v.id)}|tz|${esc(t.id)}">פירוק</button></td>` : ''}</tr>`).join('')}${lg.map(x => `<tr><td>${esc(skuName(x.sku))}</td><td class="num">${x.qty}</td>${edit ? `<td><button class="btn sm" data-act="vehOut" data-v="${esc(v.id)}|L|${esc(x.sku)}">פירוק</button></td>` : ''}</tr>`).join('')}</tbody></table></div>` : '<div class="small muted">אין ציוד מותקן.</div>'}
+      ${edit ? `<div class="toolbar"><div class="field"><label for="vi_${safeId(v.id)}">התקנת ציוד מהמחסן</label><select id="vi_${safeId(v.id)}" data-bind="vehAdd.${esc(v.id)}.item"><option value="">בחר…</option>${myTz.length ? `<optgroup label="צ׳">${myTz.map(t => `<option value="tz|${esc(t.id)}" ${a.item === 'tz|' + t.id ? 'selected' : ''}>${esc(skuName(t.sku))} · ${esc(t.id)}</option>`).join('')}</optgroup>` : ''}${myLogat.length ? `<optgroup label="לוג״ת">${myLogat.map(x => `<option value="L|${esc(x.sku)}" ${a.item === 'L|' + x.sku ? 'selected' : ''}>${esc(skuName(x.sku))} (זמין ${avail(id, x.sku)})</option>`).join('')}</optgroup>` : ''}</select></div>${a.item && a.item.startsWith('L|') ? `<div class="field" style="flex:0 1 100px"><label for="vq_${safeId(v.id)}">כמות</label><input type="number" min="1" id="vq_${safeId(v.id)}" data-bind="vehAdd.${esc(v.id)}.qty" value="${esc(a.qty || '1')}"></div>` : ''}</div><div class="actions"><button class="btn sm primary" data-act="vehIn" data-v="${esc(v.id)}">התקנה ברכב</button></div>` : ''}
+    </div>`;
+  };
+  return `<div class="scope">רכב נחתם לפי מספר רכב, וכל הציוד שמותקן עליו עובר איתו. מחתימים רכב ליחידה אחרת בעמוד <b>קבלות</b>, כמו כל ציוד. ציוד מתקינים ומפרקים רק כשהרכב נמצא במחסן שלך.</div>
+  ${list.length ? `<div class="list">${list.map(card).join('')}</div>` : empty('אין רכבים', canAct ? 'מוסיפים רכב בטופס למטה.' : '')}
+  ${canAct && ['brigade', 'battalion'].includes(S.nodes[id].level) ? `<section class="block"><h2>רכב חדש</h2><div class="card formgrid"><div class="toolbar">
+    <div class="field"><label for="vNum">מספר רכב</label><input type="text" id="vNum" dir="ltr" data-bind="veh.number" value="${esc(ui.veh.number)}" placeholder="למשל 123-456"></div>
+    <div class="field"><label for="vType">סוג רכב</label><input type="text" id="vType" list="vTypes" data-bind="veh.vtype" value="${esc(ui.veh.vtype)}" placeholder="למשל: האמר, סופה, נגמ״ש"><datalist id="vTypes">${types.map(t => `<option value="${esc(t)}">`).join('')}</datalist></div>
+  </div><div class="actions"><button class="btn primary" data-act="vehNew">הוספת רכב</button></div></div></section>` : ''}`;
 }
 
 /* ---------- kits ---------- */
@@ -644,6 +678,7 @@ function renderMoves() {
   if (!targets.includes(draft.target)) draft.target = targets.length === 1 ? targets[0] : '';
   const myLogat = holdings(id).filter(s => S.skus[s.sku]?.kind !== 'tz');
   const myTz = liveTz().filter(t => t.holder === id && !t.pending && activeTz(t)).sort((a, b) => a.id.localeCompare(b.id));
+  const myVeh = vkids(id).filter(v => !v.pending);
 
   const lines = draft.lines.map((l, i) => {
     const max = l.sku ? avail(id, l.sku) : 0;
@@ -657,6 +692,7 @@ function renderMoves() {
     <div class="small muted">${draft.type === 'issue' ? 'ניפוק לדרג שמתחתיך. הציוד עובר רק אחרי שהמקבל חותם.' : draft.type === 'return' ? 'החזרת ציוד לדרג שמעליך. נסגר כשהמקבל מאשר קבלה.' : 'העברה ליחידה מקבילה. דורשת אישור הדרג המשותף ואז חתימת המקבל.'}</div>
     <div class="field"><label for="dTarget">${draft.type === 'return' ? 'מוחזר אל' : 'נמסר אל'}</label><select id="dTarget" data-bind="draft.target"><option value="">בחר…</option>${targets.map(t => `<option value="${esc(t)}" ${draft.target === t ? 'selected' : ''}>${esc(nm(t))}</option>`).join('')}</select></div>
     <div class="field"><span class="lbl">ציוד לוג״ת</span>${myLogat.length ? `${lines}<div><button class="linkbtn" data-act="addLine">+ הוספת פריט לוג״ת</button></div>` : '<span class="small muted">אין עליך ציוד לוג״ת זמין.</span>'}</div>
+    ${myVeh.length ? `<div class="field"><span class="lbl">רכבים (${draft.veh.length} נבחרו) · הציוד המותקן עובר יחד עם הרכב</span><div class="checks">${myVeh.map(v => `<label class="check"><input type="checkbox" id="dveh_${safeId(v.id)}" data-act="dveh" data-v="${esc(v.id)}" ${draft.veh.includes(v.id) ? 'checked' : ''}> <span class="num">${esc(v.number)}</span> ${esc(v.vtype || '')} <span class="small muted">${vehContents(v.id).length} פריטים מותקנים</span></label>`).join('')}</div></div>` : ''}
     <div class="field"><span class="lbl">ציוד צ׳ (${draft.tz.length} נבחרו)</span>${myTz.length ? `<div class="checks">${myTz.map(t => `<label class="check"><input type="checkbox" id="dtz_${esc(t.id)}" data-act="dtz" data-v="${esc(t.id)}" ${draft.tz.includes(t.id) ? 'checked' : ''}> ${tzNo(t.id)} <span class="small muted">${esc(skuName(t.sku))}</span></label>`).join('')}</div>` : '<span class="small muted">אין עליך פריטי צ׳ זמינים.</span>'}</div>
     ${bundleKits().length ? `<div class="field"><span class="lbl">ניפוק קיט</span><div class="toolbar"><div class="field"><label for="kpKit">קיט</label><select id="kpKit" data-bind="kitPick.kit"><option value="">בחר קיט…</option>${bundleKits().map(k => `<option value="${esc(k.id)}" ${ui.kitPick.kit === k.id ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select></div><div class="field" style="flex:0 1 100px"><label for="kpN">כמות</label><input type="number" min="1" id="kpN" data-bind="kitPick.n" value="${esc(ui.kitPick.n)}"></div></div>${ui.kitPick.kit && S.kits[ui.kitPick.kit] ? `<div class="small muted">כולל: ${S.kits[ui.kitPick.kit].items.filter(c => c.sku).map(c => esc(skuName(c.sku)) + ' × ' + c.qty).join(', ')}</div>` : ''}<div><button class="btn sm" data-act="addKitToDraft">הוספת הקיט לניפוק</button></div>${draft.kits.length ? `<div class="small">קיטים בניפוק: ${draft.kits.map(k => `<span class="pill acc">${esc(k.name)} × ${k.count}</span>`).join(' ')}</div>` : ''}</div>` : ''}
     ${renderKitPicks()}
@@ -701,7 +737,7 @@ function renderReceive() {
 /* ---------- weekly ---------- */
 function renderWeekly() {
   const id = me();
-  const mine = liveTz().filter(t => t.holder === id && activeTz(t)).sort((a, b) => a.id.localeCompare(b.id));
+  const mine = liveTz().filter(t => atUnit(t.holder) === id && activeTz(t)).sort((a, b) => a.id.localeCompare(b.id));
   const open = mine.filter(t => !confirmOf(t));
   const ph = phase();
   const we = weekEnd();
@@ -739,7 +775,7 @@ function renderFree() {
 
 /* ---------- tz report ---------- */
 function renderTzReport() {
-  const id = me(), scope = desc(id);
+  const id = me(), scope = descU(id);
   if (!ui.repUnit || !scope.includes(ui.repUnit)) ui.repUnit = id;
   const holders = new Set(desc(ui.repUnit));
   const q = ui.repQ.trim(), match = x => !q || String(x).includes(q);
@@ -747,7 +783,7 @@ function renderTzReport() {
   const rows = liveTz().filter(t => holders.has(t.holder) && (match(t.id) || match(skuName(t.sku)) || match(nm(t.holder)) || match(ownerLabel(t))))
     .filter(t => f === 'all' || (f === 'signed' && signedTo(t)) || (f === 'free' && !signedTo(t)) || (f === 'alert' && !periodState(t)[2]) || (f === 'loan' && t.loanId) || (f === 'unconf' && activeTz(t) && !confirmOf(t)))
     .sort((a, b) => skuName(a.sku).localeCompare(skuName(b.sku), 'he') || a.id.localeCompare(b.id));
-  const mine = liveTz().filter(t => t.holder === id && activeTz(t));
+  const mine = liveTz().filter(t => atUnit(t.holder) === id && activeTz(t));
   const unitOpts = scope.filter(u => S.nodes[u].level !== 'role' || liveTz().some(t => t.holder === u)).map(u => `<option value="${esc(u)}" ${u === ui.repUnit ? 'selected' : ''}>${'  '.repeat(depth(u) - depth(id))}${esc(nm(u))}</option>`).join('');
   return `${mine.length ? `<section class="block"><h2>האישור השבועי שלי<small>${mine.filter(t => !confirmOf(t)).length} פריטים ממתינים לאישור</small></h2>${renderWeekly()}</section>` : ''}
   <section class="block"><h2>כל פריטי הצ׳<small>${rows.length} פריטים · לחיצה פותחת כרטיס פריט</small></h2>
@@ -947,11 +983,11 @@ function render() {
   if (!root) { gate(isOwner() ? importView() : empty('עדיין אין יחידות במערכת', 'בעל המערכת צריך לבצע ייבוא ראשוני של מבנה החטיבה.')); return; }
   if (!isOwner() && (!ME.member || !ME.member.active || !S.nodes[ME.member.unit])) { authState = 'nomember'; renderGate(); return; }
   ensureStructure();
-  const scopeIds = desc(viewRoot());
+  const scopeIds = descU(viewRoot());
   if (!scopeIds.includes(ui.acting)) ui.acting = ME.member && scopeIds.includes(ME.member.unit) ? ME.member.unit : scopeIds[0];
   renderHeader();
   const a = document.activeElement, fid = a && a.id, s0 = a && a.selectionStart, s1 = a && a.selectionEnd;
-  const views = { overview: renderOverview, free: renderFree, moves: renderMoves, tzrep: renderTzReport, desc: renderDescriptor, loans: renderLoans, descs: renderDescs, unit: renderUnit, kits: renderKits, catalog: renderCatalog };
+  const views = { overview: renderOverview, free: renderFree, moves: renderMoves, tzrep: renderTzReport, desc: renderDescriptor, loans: renderLoans, descs: renderDescs, unit: renderUnit, kits: renderKits, catalog: renderCatalog, vehicles: renderVehicles };
   main.innerHTML = `<h1 class="ptitle">${esc(ui.pageTitle || '')}</h1>` + (views[ui.tab] || renderOverview)();
   renderSheet();
   if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); try { if (s0 != null) el.setSelectionRange(s0, s1); } catch (e) {} } }
@@ -962,13 +998,39 @@ const H = {
   menu: () => { menuOpen = true; renderDrawer(); },
   menuClose: () => { menuOpen = false; renderDrawer(); },
   tab: v => { menuOpen = false; ui.tab = v; try { localStorage.setItem('inv.tab', v); } catch (e) {} render(); window.scrollTo(0, 0); },
-  goto: v => { if (!desc(viewRoot()).includes(v)) return; ui.acting = v; ui.permUnit = null; ui.repUnit = null; ui.repF = 'all'; draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [] }; try { localStorage.setItem('inv.acting', v); } catch (e) {} render(); window.scrollTo(0, 0); },
+  goto: v => { if (!descU(viewRoot()).includes(v)) return; ui.acting = v; ui.permUnit = null; ui.repUnit = null; ui.repF = 'all'; draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [], veh: [] }; try { localStorage.setItem('inv.acting', v); } catch (e) {} render(); window.scrollTo(0, 0); },
   kind: v => { ui.stockKind = v; render(); },
   permSel: v => { ui.permUnit = v; ui.addM.unit = v; render(); },
   gotoPerm: v => { const owner = permOwner(v); H.goto(owner); ui.permUnit = v; H.tab('unit'); },
   detail: v => { ui.detail = v; renderSheet(); },
   closeSheet: (v, el, e) => { if (v === 'bg' && e.target !== el) return; ui.detail = null; ui.report = null; renderSheet(); },
   dtype: v => { draft.type = v; draft.target = ''; render(); },
+  vehNew: () => run(async () => {
+    const id = me(); currentSigner();
+    if (!['brigade', 'battalion'].includes(S.nodes[id].level)) fail('רכבים מוסיפים בחטיבה או בגדוד.');
+    const number = ui.veh.number.trim(), vtype = ui.veh.vtype.trim();
+    if (!number) fail('הזן מספר רכב.'); if (!vtype) fail('הזן סוג רכב.');
+    const vid = 'v-' + number.replace(/[^0-9A-Za-z]/g, '');
+    if (vid === 'v-') fail('מספר רכב צריך להכיל ספרות.');
+    if (S.nodes[vid]) fail(`רכב ${number} כבר קיים (${nm(S.nodes[vid].parent)}).`);
+    await put('nodes', vid, { level: 'vehicle', name: `${vtype} ${number}`, number, vtype, parent: id, top: topOf(id), order: 0, pending: null, createdAt: now() });
+    ui.veh = { number: '', vtype: ui.veh.vtype };
+  }, 'הרכב נוסף.'),
+  vehDel: v => run(async () => { const n = S.nodes[v]; currentSigner(); if (!n || n.parent !== me()) fail('אפשר למחוק רק רכב שנמצא במחסן שלך.'); if (vehTz(v).length || holdings(v).length) fail('יש ציוד מותקן ברכב. מפרקים אותו קודם.'); await col('nodes').doc(v).delete(); }, 'הרכב נמחק.'),
+  vehIn: v => run(async () => {
+    const id = me(), n = S.nodes[v], sg = currentSigner(); if (!n || n.parent !== id || n.pending) fail('אפשר להתקין ציוד רק ברכב שנמצא במחסן שלך.');
+    const a = ui.vehAdd[v] || {}; if (!a.item) fail('בחר פריט להתקנה.');
+    const [kind, ref] = a.item.split('|'); const mid = uid('m');
+    if (kind === 'tz') { const t = S.tz[ref]; if (!t || t.holder !== id || t.pending) fail('הפריט לא זמין במחסן.'); await patch('tz', ref, { holder: v, since: now() }); await put('moves', mid, { type: 'install', from: id, to: v, lines: [], tz: [ref], status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' }); }
+    else { const q = parseInt(a.qty || '1', 10); if (!(q > 0)) fail('הזן כמות.'); if (q > avail(id, ref)) fail(`זמין רק ${avail(id, ref)}.`); await addQty(id, ref, -q); await addQty(v, ref, q); await put('moves', mid, { type: 'install', from: id, to: v, lines: [{ sku: ref, qty: q }], tz: [], status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' }); }
+    ui.vehAdd[v] = {};
+  }, 'הותקן ברכב.'),
+  vehOut: v => run(async () => {
+    const [vid, kind, ref] = v.split('|'); const id = me(), n = S.nodes[vid], sg = currentSigner(); if (!n || n.parent !== id || n.pending) fail('אפשר לפרק ציוד רק מרכב שנמצא במחסן שלך.');
+    const mid = uid('m');
+    if (kind === 'tz') { await patch('tz', ref, { holder: id, since: now() }); await put('moves', mid, { type: 'uninstall', from: vid, to: id, lines: [], tz: [ref], status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' }); }
+    else { const q = qtyOf(vid, ref); await addQty(vid, ref, -q); await addQty(id, ref, q); await put('moves', mid, { type: 'uninstall', from: vid, to: id, lines: [{ sku: ref, qty: q }], tz: [], status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' }); }
+  }, 'פורק מהרכב והוחזר למחסן.'),
   addKitToDraft: () => {
     const k = S.kits[ui.kitPick.kit]; const n = parseInt(ui.kitPick.n, 10);
     if (!k) { toast('בחר קיט.'); return; } if (!(n > 0)) { toast('הזן כמות קיטים, 1 ומעלה.'); return; }
@@ -994,6 +1056,7 @@ const H = {
   },
   addLine: () => { draft.lines.push({ sku: '', qty: '' }); render(); },
   delLine: v => { draft.lines.splice(+v, 1); render(); },
+  dveh: v => { const i = draft.veh.indexOf(v); if (i < 0) draft.veh.push(v); else draft.veh.splice(i, 1); render(); },
   dtz: v => { const i = draft.tz.indexOf(v); if (i < 0) draft.tz.push(v); else { draft.tz.splice(i, 1); delete draft.kit[v]; } render(); },
   kitInc: v => { const [k, cid] = v.split('|'); const it = (draft.kit[k] || []).find(c => c.id === cid); if (it) it.inc = !it.inc; render(); },
   recvInc: v => { const [mid, k, i] = v.split('|'); const m = S.moves[mid]; if (!m) return; const st = recvState(m, k); if (st[+i]) st[+i].got = !st[+i].got; renderSheet(); },
@@ -1052,16 +1115,19 @@ const H = {
     const lines = Object.entries(merged).map(([sku, qty]) => ({ sku, qty }));
     for (const l of lines) if (l.qty > avail(from, l.sku)) fail(`הכמות של ${skuName(l.sku)} גדולה מהזמין (${avail(from, l.sku)}).`);
     const tz = draft.tz.filter(t => S.tz[t] && S.tz[t].holder === from && !S.tz[t].pending);
-    if (!lines.length && !tz.length) fail('לא נבחר ציוד. הוסף פריט לוג״ת או סמן פריטי צ׳.');
+    const veh = draft.veh.filter(v => S.nodes[v] && S.nodes[v].parent === from && !S.nodes[v].pending);
+    if (!lines.length && !tz.length && !veh.length) fail('לא נבחר ציוד. הוסף פריט לוג״ת, סמן פריטי צ׳ או רכב.');
+    if (veh.some(v => vehTz(v).some(t => t.pending))) fail('ברכב יש פריט צ׳ שנמצא בתנועה אחרת.');
     const sg = currentSigner();
     const id = uid('m');
     const isT = draft.type === 'transfer';
     const kit = {};
     for (const t of tz) { const d = kitDraft(t, S.tz[t].sku, S.tz[t].kit && S.tz[t].kit.items); if (d) kit[t] = d.map(c => ({ id: c.id, name: c.name, qty: c.qty, inc: !!c.inc })); }
     for (const l of lines) { const d = kitDraft('L:' + l.sku, l.sku, null); if (d) kit['L:' + l.sku] = d.map(c => ({ id: c.id, name: c.name, qty: c.qty * l.qty, inc: !!c.inc })); }
-    await put('moves', id, { type: draft.type, from, to: draft.target, approver: isT ? S.nodes[from].parent : null, lines, tz, kit, kits: draft.kits.map(k => ({ id: k.id, name: k.name, count: k.count })), status: isT ? 'awaiting' : 'pending', createdAt: now(), createdBy: sg.label, note: draft.note.trim() });
+    await put('moves', id, { type: draft.type, from, to: draft.target, approver: isT ? S.nodes[from].parent : null, lines, tz, veh, vehItems: Object.fromEntries(veh.map(v => [v, { tz: vehTz(v).map(t => t.id), logat: holdings(v).map(x => ({ sku: x.sku, qty: x.qty })) }])), kit, kits: draft.kits.map(k => ({ id: k.id, name: k.name, count: k.count })), status: isT ? 'awaiting' : 'pending', createdAt: now(), createdBy: sg.label, note: draft.note.trim() });
     for (const t of tz) await patch('tz', t, { pending: id });
-    draft = { type: draft.type, target: '', lines: [], tz: [], note: '', kit: {}, kits: [] };
+    for (const v of veh) await patch('nodes', v, { pending: id });
+    draft = { type: draft.type, target: '', lines: [], tz: [], note: '', kit: {}, kits: [], veh: [] };
   }, 'נשלח. הציוד יעבור אחרי חתימת המקבל.'),
   sign: v => run(async () => {
     const m = S.moves[v]; if (!m || m.status !== 'pending') fail('התנועה כבר טופלה.');
@@ -1070,6 +1136,7 @@ const H = {
     for (const key of Object.keys(m.kit || {})) { const st = recvState(m, key); kitRecv[key] = st.map(c => ({ id: c.id, name: c.name, qty: c.qty, inc: !!c.inc, got: !!c.got })); st.forEach(c => { if (c.inc && !c.got) short.push(`${key.startsWith('L:') ? skuName(key.slice(2)) : 'צ׳ ' + key}: ${c.name}`); }); }
     for (const l of m.lines || []) { await addQty(m.from, l.sku, -l.qty); }
     for (const l of m.lines || []) { await addQty(m.to, l.sku, l.qty); }
+    for (const vv of m.veh || []) await patch('nodes', vv, { parent: m.to, pending: null });
     for (const t of m.tz || []) {
       const upd = { holder: m.to, since: now(), pending: null };
       if (kitRecv[t]) upd.kit = { items: kitRecv[t].map(c => ({ id: c.id, name: c.name, qty: c.qty, have: c.got })), at: now() };
@@ -1081,8 +1148,8 @@ const H = {
     toast(short.length ? `נחתם עם ${short.length} חוסרים בקיט. נפתח אירוע חריג.` : 'נחתם. הציוד רשום עכשיו על ' + nm(m.to) + '.');
   }, null),
   approve: v => run(async () => { const sg = currentSigner(); await patch('moves', v, { status: 'pending', approvedAt: now(), approvedBy: sg.label }); }, 'ההעברה אושרה ונשלחה לחתימת המקבל.'),
-  reject: v => run(async () => { const sg = currentSigner(); const m = S.moves[v]; for (const t of m.tz || []) await patch('tz', t, { pending: null }); await patch('moves', v, { status: 'rejected', signedAt: now(), signedBy: sg.label }); ui.report = null; }, 'התנועה נדחתה. הציוד נשאר אצל השולח.'),
-  cancel: v => run(async () => { const m = S.moves[v]; for (const t of m.tz || []) await patch('tz', t, { pending: null }); await patch('moves', v, { status: 'cancelled' }); }, 'התנועה בוטלה.'),
+  reject: v => run(async () => { const sg = currentSigner(); const m = S.moves[v]; for (const t of m.tz || []) await patch('tz', t, { pending: null }); for (const x of m.veh || []) if (S.nodes[x]) await patch('nodes', x, { pending: null }); await patch('moves', v, { status: 'rejected', signedAt: now(), signedBy: sg.label }); ui.report = null; }, 'התנועה נדחתה. הציוד נשאר אצל השולח.'),
+  cancel: v => run(async () => { const m = S.moves[v]; for (const t of m.tz || []) await patch('tz', t, { pending: null }); for (const x of m.veh || []) if (S.nodes[x]) await patch('nodes', x, { pending: null }); await patch('moves', v, { status: 'cancelled' }); }, 'התנועה בוטלה.'),
   receive: () => run(async () => {
     const to = me(); let sku = rcv.sku;
     if (S.nodes[to].parent) fail('רק החטיבה יכולה לקלוט ציוד מבחוץ.');
@@ -1119,7 +1186,7 @@ const H = {
   noteCancel: () => { ui.noteFor = null; render(); },
   allHere: () => run(async () => {
     const sg = currentSigner();
-    const list = liveTz().filter(t => t.holder === me() && activeTz(t) && !confirmOf(t));
+    const list = liveTz().filter(t => atUnit(t.holder) === me() && activeTz(t) && !confirmOf(t));
     for (const t of list) await put('confirms', WEEK + '__' + t.id, { tz: t.id, week: WEEK, holder: t.holder, answer: 'here', note: '', at: now(), by: sg.label });
   }, 'כל הפריטים אושרו לשבוע הזה.'),
   addPeriod: v => run(async () => {
@@ -1157,7 +1224,7 @@ const H = {
     ui.addR = { name: '', person: '' };
   }, 'בעל התפקיד נוסף.'),
   openUnc: v => run(async () => {
-    const list = liveTz().filter(t => t.holder === v && activeTz(t) && !confirmOf(t));
+    const list = liveTz().filter(t => atUnit(t.holder) === v && activeTz(t) && !confirmOf(t));
     await put('incidents', 'unc__' + WEEK + '__' + v, { type: 'unconfirmed', tz: list.length === 1 ? list[0].id : null, holder: v, status: 'open', note: `${list.length} פריטים לא אושרו: ${list.map(t => t.id).join(', ')}`, createdAt: now() });
   }, 'נפתח אירוע חריג.'),
 };
@@ -1190,6 +1257,8 @@ function bind(el, rerender) {
   else if (a === 'loan') ui.loan[b] = val;
   else if (a === 'cat') ui.cat[b] = val;
   else if (a === 'kitPick') ui.kitPick[b] = val;
+  else if (a === 'veh') ui.veh[b] = val;
+  else if (a === 'vehAdd') { ui.vehAdd[b] = ui.vehAdd[b] || {}; ui.vehAdd[b][c] = val; }
   else if (a === 'tek') { ui.tekDraft[b] = ui.tekDraft[b] || {}; ui.tekDraft[b][c] = val; }
   else if (a === 'catName') ui.catName[b] = val;
   else if (a === 'per') { ui.perDraft[b] = ui.perDraft[b] || {}; ui.perDraft[b][c] = val; }
@@ -1343,7 +1412,7 @@ function subscribe() {
   }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
 }
 /* ---------- auto-update: reload when a newer version is published ---------- */
-const BUILD = '20261030211150';
+const BUILD = '20261031041727';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
