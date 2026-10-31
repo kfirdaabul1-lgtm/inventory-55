@@ -221,7 +221,7 @@ const COLS = ['nodes', 'skus', 'tz', 'stock', 'moves', 'confirms', 'incidents', 
 const S = {}; COLS.forEach(c => S[c] = {});
 const loaded = new Set();
 let db = null, busy = false;
-const ui = { signMode: 'eq', veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
+const ui = { rm: { reason: '', note: '', open: false }, rmL: {}, signMode: 'eq', veh: { number: '', vtype: '' }, vehAdd: {}, kitPick: { kit: '', n: '1' }, tekEdit: false, tekDraft: {}, cat: { kind: 'logat', names: '', unit: '', lines: '' }, catName: {}, catDel: null, tab: 'overview', acting: null, stockUnit: null, stockSub: true, stockQ: '', stockKind: 'all', detail: null, noteFor: null, notes: {}, signer: {}, cryptoDraft: {}, addS: { role: '', name: '', pn: '' }, addR: { name: '', person: '' }, addP: { name: '', unit: '' }, addM: { email: '', name: '', roleTitle: '', pn: '', unit: '', canSign: true, isAdmin: false, canReceive: false }, permUnit: null, report: null, recv: {}, kitAdd: {}, newKit: { sku: '', name: '' }, perDraft: {}, freeQ: '', repQ: '', repUnit: null, repF: 'all', descsLevel: null, loan: { from: '', due: '', kind: 'tz', sku: '', qty: '', tzList: '', newName: '', note: '' } };
 let draft = { type: null, target: '', lines: [], tz: [], note: '', kit: {}, kits: [], veh: [] };
 const rcv = { kind: 'logat', sku: '', qty: '', tzList: '', newName: '' };
 try { ui.acting = localStorage.getItem('inv.acting'); ui.tab = localStorage.getItem('inv.tab') || 'overview'; } catch (e) {}
@@ -239,7 +239,7 @@ const now = () => new Date().toISOString();
 const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 const LEVEL = { brigade: 'חטיבה', battalion: 'יחידה', company: 'פלוגה / חפ״ק', role: 'בעל תפקיד', vehicle: 'רכב' };
-const MTYPE = { install: 'התקנה ברכב', uninstall: 'פירוק מרכב', receive: 'קליטה', issue: 'ניפוק', return: 'זיכוי', transfer: 'העברה', loan: 'השאלה מיחידה', loanret: 'החזרת השאלה' };
+const MTYPE = { remove: 'הוצאה מהמלאי', install: 'התקנה ברכב', uninstall: 'פירוק מרכב', receive: 'קליטה', issue: 'ניפוק', return: 'זיכוי', transfer: 'העברה', loan: 'השאלה מיחידה', loanret: 'החזרת השאלה' };
 const MSTAT = { awaiting: ['ממתין לאישור דרג', 'warn'], pending: ['ממתין לחתימה', 'warn'], signed: ['נחתם', 'good'], rejected: ['נדחה', 'crit'], cancelled: ['בוטל', ''] };
 const TZSTAT = { ok: ['תקין', 'good'], repair: ['בתיקון', 'warn'], disabled: ['מושבת', ''], lost: ['אבד', 'crit'] };
 const ANS = { here: ['נמצא אצלי', 'good'], missing: ['לא נמצא', 'crit'], repair: ['בתיקון / הועבר', 'warn'] };
@@ -509,6 +509,17 @@ function renderOverview() {
 }
 
 /* ---------- tz detail sheet ---------- */
+const RM_REASONS = ['הועבר ליחידה מחוץ לחטיבה', 'הוחזר לספק / לאוגדה', 'גריעה (בלאי, השמדה)', 'הוזן בטעות'];
+const canRemoveTz = t => !t.pending && !t.loanId && desc(me()).includes(t.holder) && !!currentSigner(false);
+function removeBlock(t) {
+  if (!canRemoveTz(t)) return '';
+  const r = ui.rm;
+  if (!r.open) return `<div class="actions"><button class="btn sm crit" data-act="rmOpen">הוצאה מהמלאי</button></div>`;
+  return `<div class="card formgrid" style="background:var(--sunk)"><b>הוצאת ${tzNo(t.id)} מהמלאי</b><div class="small muted">הפריט יוסר מכל הדוחות והמתארים. ההיסטוריה שלו נשמרת בקבלות.</div>
+    <div class="field"><label for="rmReason">סיבה</label><select id="rmReason" data-bind="rm.reason"><option value="">בחר…</option>${RM_REASONS.map(x => `<option ${r.reason === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
+    <div class="field"><label for="rmNote">פירוט (לאן הועבר, מספר אסמכתא)</label><input type="text" id="rmNote" data-bind="rm.note" value="${esc(r.note)}"></div>
+    <div class="actions"><button class="btn crit" data-act="rmTz" data-v="${esc(t.id)}">הוצאה מהמלאי</button><button class="btn" data-act="rmCancel">ביטול</button></div></div>`;
+}
 function renderSheet() {
   const box = document.getElementById('sheet');
   if (ui.report && S.moves[ui.report]) { box.innerHTML = renderReport(S.moves[ui.report]); return; }
@@ -524,6 +535,7 @@ function renderSheet() {
       <dt>מוחתם ל</dt><dd>${signedTo(t) ? esc(fullName(t.holder)) : 'לא מוחתם · במחסן ' + esc(nm(t.holder))}</dd><dt>מאז</dt><dd>${fmtD(t.since)}</dd>
       <dt>מצב</dt><dd>${canEdit ? `<select id="tzStatus" data-act-change="tzStatus" data-v="${esc(t.id)}">${Object.entries(TZSTAT).map(([k, [l]]) => `<option value="${k}" ${t.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : pill(TZSTAT[t.status] || [t.status])}</dd></dl>
     ${periodBlock(t, canEdit || t.holder === me())}
+    ${removeBlock(t)}
     ${t.kit && (t.kit.items || []).length ? `<div><div class="lbl" style="margin-bottom:6px">תכולת קיט נוכחית${t.kit.at ? ' · עודכן ' + fmtD(t.kit.at) : ''}</div><div class="checks">${t.kit.items.map(c => `<div class="check" style="cursor:default">${c.have ? '<span class="pill good">יש</span>' : '<span class="pill crit">חסר</span>'} ${esc(c.name)} <span class="small muted num">× ${c.qty}</span></div>`).join('')}</div></div>` : (kitFor(t.sku) ? '<div class="small muted">לפריט מוגדר קיט, אך תכולתו טרם תועדה.</div>' : '')}
     <div><div class="lbl" style="margin-bottom:6px">אישורים שבועיים</div>${confs.length ? `<div class="timeline">${confs.slice(0, 8).map(c => `<div>שבוע ${fmtD(c.week + 'T00:00:00')} · ${pill(ANS[c.answer])} <span class="muted small">${esc(nm(c.holder))}${c.note ? ' · ' + esc(c.note) : ''}</span></div>`).join('')}</div>` : '<div class="muted small">אין עדיין אישורים.</div>'}</div>
     <div><div class="lbl" style="margin-bottom:6px">היסטוריית תנועות</div>${hist.length ? `<div class="timeline">${hist.map(m => `<div>${fmtD(m.createdAt)} · ${MTYPE[m.type]}: ${esc(sideName(m.from, m.fromExt))} ← ${esc(sideName(m.to, m.toExt))} ${pill(MSTAT[m.status])}</div>`).join('')}</div>` : '<div class="muted small">אין תנועות.</div>'}</div>
@@ -771,12 +783,12 @@ function renderFree() {
   const q = ui.freeQ.trim(), match = x => !q || String(x).includes(q);
   const logat = holdings(id).filter(x => S.skus[x.sku]?.kind !== 'tz' && match(skuName(x.sku))).sort((a, b) => skuName(a.sku).localeCompare(skuName(b.sku), 'he'));
   const tzs = liveTz().filter(t => t.holder === id && activeTz(t) && (match(t.id) || match(skuName(t.sku)))).sort((a, b) => skuName(a.sku).localeCompare(skuName(b.sku), 'he') || a.id.localeCompare(b.id));
-  const units = logat.reduce((x, l) => x + l.qty, 0);
+  const units = logat.reduce((x, l) => x + l.qty, 0), canRm = !isRole && !!currentSigner(false);
   return `<div class="scope">${isRole ? `ציוד שחתום אישית על <b>${esc(nm(id))}</b>.` : `ציוד שנמצא במחסן של <b>${esc(nm(id))}</b> ולא מוחתם על אף יחידה או בעל תפקיד מתחתיה. זה הציוד הזמין לניפוק.`}</div>
   <div class="stats"><div class="stat lead"><span class="k">פריטי צ׳ פנויים</span><span class="v">${tzs.length}</span></div><div class="stat"><span class="k">לוג״ת פנוי</span><span class="v">${units}<small> · ${logat.length} מק״טים</small></span></div></div>
   <div class="toolbar"><div class="field"><label for="freeQ">חיפוש</label><input type="text" id="freeQ" data-bind="freeQ" value="${esc(ui.freeQ)}" placeholder="שם מכשיר או מספר צ׳"></div>${!isRole && kids(id).length ? '<div class="actions"><button class="btn primary" data-act="tab" data-v="sign">ניפוק מהמלאי החופשי</button></div>' : ''}</div>
   <section class="block"><h2>פריטי צ׳<small>לחיצה פותחת כרטיס פריט</small></h2>${tzs.length ? `<div class="tablewrap"><table><thead><tr><th>שם מכשיר</th><th>צ׳</th><th>תקופות הצפנה</th><th>שייכות</th><th>מצב</th></tr></thead><tbody>${tzs.map(t => `<tr class="click" data-act="detail" data-v="${esc(t.id)}"><td>${esc(skuName(t.sku))}</td><td>${tzNo(t.id)}</td><td>${periodsCell(t)}</td><td>${ownerCell(t)}</td><td>${pill(TZSTAT[t.status] || [t.status])}${t.pending ? ' <span class="pill warn">בתנועה</span>' : ''}</td></tr>`).join('')}</tbody></table></div>` : empty('אין פריטי צ׳ פנויים', '')}</section>
-  <section class="block"><h2>לוג״ת</h2>${logat.length ? `<div class="tablewrap"><table><thead><tr><th>פריט</th><th>כמות במחסן</th><th>זמין לניפוק</th></tr></thead><tbody>${logat.map(l => `<tr><td>${esc(skuName(l.sku))}</td><td class="num">${l.qty}</td><td class="num">${avail(id, l.sku)}</td></tr>`).join('')}</tbody></table></div>` : empty('אין לוג״ת פנוי', '')}</section>`;
+  <section class="block"><h2>לוג״ת</h2>${logat.length ? `<div class="tablewrap"><table><thead><tr><th>פריט</th><th>כמות במחסן</th><th>זמין לניפוק</th>${canRm ? '<th></th>' : ''}</tr></thead><tbody>${logat.map(l => `<tr><td>${esc(skuName(l.sku))}</td><td class="num">${l.qty}</td><td class="num">${avail(id, l.sku)}</td>${canRm ? `<td><button class="btn sm" data-act="rmLOpen" data-v="${esc(l.sku)}">הוצאה</button></td>` : ''}</tr>${canRm && ui.rmL.open === l.sku ? `<tr><td colspan="4"><div class="toolbar"><div class="field" style="flex:0 1 110px"><label for="rmq_${safeId(l.sku)}">כמות</label><input type="number" min="1" max="${avail(id, l.sku)}" id="rmq_${safeId(l.sku)}" data-bind="rmL.${esc(l.sku)}_q" value="${esc(ui.rmL[l.sku + '_q'] || '')}"></div><div class="field"><label for="rmr_${safeId(l.sku)}">סיבה</label><select id="rmr_${safeId(l.sku)}" data-bind="rmL.${esc(l.sku)}_r"><option value="">בחר…</option>${RM_REASONS.map(x => `<option ${ui.rmL[l.sku + '_r'] === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div></div><div class="actions"><button class="btn sm crit" data-act="rmLogat" data-v="${esc(l.sku)}">הוצאה מהמלאי</button></div></td></tr>` : ''}`).join('')}</tbody></table></div>` : empty('אין לוג״ת פנוי', '')}</section>`;
 }
 
 /* ---------- tz report ---------- */
@@ -1008,7 +1020,7 @@ const H = {
   kind: v => { ui.stockKind = v; render(); },
   permSel: v => { ui.permUnit = v; ui.addM.unit = v; render(); },
   gotoPerm: v => { const owner = permOwner(v); H.goto(owner); ui.permUnit = v; H.tab('unit'); },
-  detail: v => { ui.detail = v; renderSheet(); },
+  detail: v => { ui.rm = { reason: '', note: '', open: false }; ui.detail = v; renderSheet(); },
   closeSheet: (v, el, e) => { if (v === 'bg' && e.target !== el) return; ui.detail = null; ui.report = null; renderSheet(); },
   dtype: v => { draft.type = v; draft.target = ''; render(); },
   vehNew: () => run(async () => {
@@ -1073,6 +1085,23 @@ const H = {
   },
   addLine: () => { draft.lines.push({ sku: '', qty: '' }); render(); },
   delLine: v => { draft.lines.splice(+v, 1); render(); },
+  rmOpen: () => { ui.rm = { reason: '', note: '', open: true }; render(); },
+  rmCancel: () => { ui.rm = { reason: '', note: '', open: false }; render(); },
+  rmTz: v => run(async () => {
+    const t = S.tz[v]; if (!t || t.returned) fail('הפריט כבר לא במלאי.'); if (!canRemoveTz(t)) fail('אין לך הרשאה להוציא את הפריט הזה מהמלאי.');
+    const sg = currentSigner(); const r = ui.rm; if (!r.reason) fail('בחר סיבה.');
+    await patch('tz', v, { returned: true, returnedAt: now(), removed: { reason: r.reason, note: r.note.trim(), by: sg.label, at: now(), from: t.holder } });
+    await put('moves', uid('m'), { type: 'remove', from: t.holder, to: null, toExt: r.reason, lines: [], tz: [v], status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: r.note.trim() });
+    ui.rm = { reason: '', note: '', open: false }; ui.detail = null;
+  }, 'הפריט הוצא מהמלאי.'),
+  rmLogat: v => run(async () => {
+    const id = me(), sg = currentSigner(); const q = parseInt(ui.rmL[v + '_q'] || '', 10), reason = ui.rmL[v + '_r'] || '';
+    if (!(q > 0)) fail('הזן כמות להוצאה.'); if (q > avail(id, v)) fail(`זמין רק ${avail(id, v)}.`); if (!reason) fail('בחר סיבה.');
+    await addQty(id, v, -q);
+    await put('moves', uid('m'), { type: 'remove', from: id, to: null, toExt: reason, lines: [{ sku: v, qty: q }], tz: [], status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' });
+    delete ui.rmL[v + '_q']; delete ui.rmL[v + '_r']; ui.rmL.open = null;
+  }, 'הכמות הוצאה מהמלאי.'),
+  rmLOpen: v => { ui.rmL.open = ui.rmL.open === v ? null : v; render(); },
   histMore: () => { ui.histN = (ui.histN || 30) + 30; render(); },
   smode: v => { ui.signMode = v; if (v !== 'veh') draft.veh = []; render(); },
   dveh: v => { const i = draft.veh.indexOf(v); if (i < 0) draft.veh.push(v); else draft.veh.splice(i, 1); render(); },
@@ -1192,7 +1221,7 @@ const H = {
     } else {
       const rows = rcv.tzList.split('\n').map(r => r.trim()).filter(Boolean).map(r => { const [n, s] = r.split(','); return { n: (n || '').replace(/[^0-9A-Za-z-]/g, ''), s: (s || '').trim() }; });
       if (!rows.length) fail('הזן לפחות מספר צ׳ אחד.');
-      for (const r of rows) { if (!r.n) fail('מספר צ׳ יכול להכיל רק ספרות, אותיות לועזיות ומקף.'); if (S.tz[r.n]) fail(`צ׳ ${r.n} כבר קיים במערכת.`); }
+      for (const r of rows) { if (!r.n) fail('מספר צ׳ יכול להכיל רק ספרות, אותיות לועזיות ומקף.'); if (S.tz[r.n] && !S.tz[r.n].returned) fail(`צ׳ ${r.n} כבר קיים במערכת.`); }
       for (const r of rows) { const d = { sku, serial: r.s, holder: to, status: 'ok', since: now(), pending: null, periods: [] }; const kd = kitFor(sku); if (kd) d.kit = { items: (kd.items || []).map(c => ({ id: c.id, name: c.name, qty: c.qty, have: true })), at: now() }; await put('tz', r.n, d); }
       await put('moves', id, { type: 'receive', from: null, to, lines: [], tz: rows.map(r => r.n), status: 'signed', createdAt: now(), signedAt: now(), signedBy: sg.label, note: '' });
     }
@@ -1285,6 +1314,8 @@ function bind(el, rerender) {
   else if (a === 'cat') ui.cat[b] = val;
   else if (a === 'kitPick') ui.kitPick[b] = val;
   else if (a === 'veh') ui.veh[b] = val;
+  else if (a === 'rm') ui.rm[b] = val;
+  else if (a === 'rmL') ui.rmL[b] = val;
   else if (a === 'vehAdd') { ui.vehAdd[b] = ui.vehAdd[b] || {}; ui.vehAdd[b][c] = val; }
   else if (a === 'vehL') { const o = ui.vehAdd[b] = ui.vehAdd[b] || {}; o.L = o.L || {}; o.L[c] = val; }
   else if (a === 'tek') { ui.tekDraft[b] = ui.tekDraft[b] || {}; ui.tekDraft[b][c] = val; }
@@ -1441,7 +1472,7 @@ function subscribe() {
   }, err => { if (err && err.code === 'permission-denied') { authState = isOwner() ? 'in' : 'nomember'; render(); } else toast('החיבור לנתונים נקטע. רענן את הדף.'); })));
 }
 /* ---------- auto-update: reload when a newer version is published ---------- */
-const BUILD = '20261031060341';
+const BUILD = '20261031062156';
 async function checkUpdate() {
   try {
     const r = await fetch(location.pathname + '?check=' + Date.now(), { cache: 'no-store' });
